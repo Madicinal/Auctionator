@@ -575,6 +575,14 @@ function Atr_Init()
 
 	AuctionatorInited = true;
 
+	-- Ascension compatibility: its Blizzard_AuctionUI can have AuctionFrame
+	-- present without the standard 3.3.5 UIPanelWindows registration. The
+	-- stock AuctionDressUpFrame_OnShow/OnHide callbacks assume this entry
+	-- exists and otherwise throw when an auction item is dress-up clicked.
+	if (UIPanelWindows and AuctionFrame and not UIPanelWindows["AuctionFrame"]) then
+		UIPanelWindows["AuctionFrame"] = { area = "doublewide", pushable = 0, width = 840 };
+	end
+
 	if (AUCTIONATOR_SAVEDVARS == nil) then
 		Atr_ResetSavedVars();
 	end
@@ -3182,6 +3190,9 @@ function Atr_HighlightEntry(entryIndex)
 	end
 
 	Atr_Buy1_Button:Disable();
+	if (Atr_Buy_Multiple_Button) then
+		Atr_Buy_Multiple_Button:Disable();
+	end
 	Atr_CancelSelectionButton:Disable();
 
 	if (doEnableCancel) then
@@ -3196,6 +3207,9 @@ function Atr_HighlightEntry(entryIndex)
 
 	if (doEnableBuy) then
 		Atr_Buy1_Button:Enable();
+		if (Atr_Buy_Multiple_Button and data and data.count and data.count > 1) then
+			Atr_Buy_Multiple_Button:Enable();
+		end
 	end
 
 end

@@ -823,6 +823,14 @@
 				</Scripts>
 			</Button>
 
+			<Button name="Atr_Buy_Multiple_Button" text="Buy Multiple" inherits="UIPanelButtonTemplate" >
+				<Size><AbsDimension x="105" y="22"/>	</Size>
+				<Anchors><Anchor point="RIGHT" relativeTo="Atr_Buy1_Button" relativePoint="LEFT"><Offset><AbsDimension x="4" y="0"/></Offset></Anchor></Anchors>
+				<Scripts>
+					<OnClick>Atr_Buy_Multiple_Onclick();</OnClick>
+				</Scripts>
+			</Button>
+
 
 			<ScrollFrame name="AuctionatorScrollFrame" inherits="FauxScrollFrameTemplate">
 				<Size><AbsDimension x="588" y="196"/></Size>
@@ -1136,12 +1144,12 @@
 				</Scripts>
 			</Button>
 
-			<CheckButton name="Atr_Buy_Chain_CB" inherits="UICheckButtonTemplate">
+			<CheckButton name="Atr_Buy_Chain_CB" inherits="UICheckButtonTemplate" hidden="true">
 				<Size><AbsDimension x="26" y="26"/></Size>
-				<Anchors><Anchor point="BOTTOMLEFT"><Offset><AbsDimension x="90" y="21"/></Offset></Anchor></Anchors>
+				<Anchors><Anchor point="BOTTOMLEFT"><Offset><AbsDimension x="60" y="21"/></Offset></Anchor></Anchors>
 				<Layers>
 					<Layer level="BACKGROUND">
-						<FontString name="Atr_Buy_Chain_Text" inherits="GameFontNormalSmall" text="Chain buy">
+						<FontString name="Atr_Buy_Chain_Text" inherits="GameFontNormalSmall" text="Chain buy - individual rows">
 							<Anchors>
 								<Anchor point="LEFT" relativePoint="RIGHT" relativeTo="Atr_Buy_Chain_CB">
 									<Offset><AbsDimension x="4" y="1"/></Offset>
@@ -1150,6 +1158,9 @@
 						</FontString>
 					</Layer>
 				</Layers>
+				<Scripts>
+					<OnClick>Atr_Buy_Chain_CB_OnClick();</OnClick>
+				</Scripts>
 			</CheckButton>
 
 			<Button name="Atr_Buy_Confirm_OKBut" inherits="UIPanelButtonTemplate" text="Buy">
