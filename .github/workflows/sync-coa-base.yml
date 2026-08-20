@@ -1,0 +1,346 @@
+name: Migrate to CoA Ascension base
+
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: write
+
+jobs:
+  migrate:
+    if: github.event.head_commit.message == 'Prepare CoA Ascension base migration'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout this repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch CoA Ascension upstream
+        run: |
+          git clone --depth 1 https://github.com/Sleepywalker69/Auctionator-CoA-Ascension.git /tmp/coa
+          rm -rf Auctionator Auctionator_Price_Database Auctionator_Pricing_History
+          cp -a /tmp/coa/Auctionator .
+          cp -a /tmp/coa/Auctionator_Price_Database .
+          cp -a /tmp/coa/Auctionator_Pricing_History .
+          cp /tmp/coa/README.md README.md
+
+      - name: Add Buy Multiple bridge to upstream buy engine
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          p = Path('Auctionator/AuctionatorBuy.lua')
+          s = p.read_text()
+
+          s = s.replace(
+              'local gAtr_Buy_Session       = 0;\n',
+              'local gAtr_Buy_Session       = 0;\n\n-- Madicinal extension: presentation-only individual auction picker.\n-- All purchasing still runs through the upstream buy state machine below.\nlocal gAtr_Buy_MultipleMode      = false;\nlocal gAtr_Buy_MultipleRequested = false;\n'
+          )
+
+          old = '''local function Atr_Buy_ShowReady ()\n\n\tif (gAtr_Buy_NumUserWants ~= -1 and gAtr_Buy_NumBought >= gAtr_Buy_NumUserWants) then\n\t\tAtr_Buy_Cancel();\n\t\treturn;\n\tend\n\n\tAtr_BuyState = ATR_BUY_PAGE_READY;\n\n\tif (gAtr_Buy_NumUserWants == -1) then'''
+          new = '''local function Atr_Buy_ShowReady ()\n\n\tif (gAtr_Buy_NumUserWants ~= -1 and gAtr_Buy_NumBought >= gAtr_Buy_NumUserWants) then\n\t\tAtr_Buy_Cancel();\n\t\treturn;\n\tend\n\n\tAtr_BuyState = ATR_BUY_PAGE_READY;\n\n\tif (gAtr_Buy_MultipleMode) then\n\t\tAtr_Buy_Confirm_Frame:Hide();\n\t\tif (Atr_BuyMultiple_OnReady) then\n\t\t\tAtr_BuyMultiple_OnReady (gAtr_Buy_MatchList, gAtr_Buy_ItemName, gAtr_Buy_StackSize, gAtr_Buy_BuyoutPrice, gAtr_Buy_CurPage);\n\t\tend\n\t\treturn;\n\tend\n\n\tif (gAtr_Buy_NumUserWants == -1) then'''
+          if old not in s:
+              raise SystemExit('Could not patch Atr_Buy_ShowReady')
+          s = s.replace(old, new, 1)
+
+          old = '''function Atr_Buy1_Onclick ()\n\n\tif (not Atr_ShowingCurrentAuctions or not Atr_ShowingCurrentAuctions()) then'''
+          new = '''function Atr_Buy1_Onclick ()\n\n\tgAtr_Buy_MultipleMode = gAtr_Buy_MultipleRequested and true or false;\n\tgAtr_Buy_MultipleRequested = false;\n\n\tif (not Atr_ShowingCurrentAuctions or not Atr_ShowingCurrentAuctions()) then'''
+          if old not in s:
+              raise SystemExit('Could not patch Atr_Buy1_Onclick entry')
+          s = s.replace(old, new, 1)
+
+          old = '''\tAtr_Buy_UpdateChainText();\n\tAtr_Buy_Confirm_Frame:Show();\n\n\tAtr_BuyState = ATR_BUY_WAITING_FOR_AH_CAN_SEND;'''
+          new = '''\tAtr_Buy_UpdateChainText();\n\tif (gAtr_Buy_MultipleMode) then\n\t\tAtr_Buy_Confirm_Frame:Hide();\n\t\tif (Atr_BuyMultiple_OnSearching) then\n\t\t\tAtr_BuyMultiple_OnSearching (gAtr_Buy_ItemName, gAtr_Buy_StackSize, gAtr_Buy_BuyoutPrice);\n\t\tend\n\telse\n\t\tAtr_Buy_Confirm_Frame:Show();\n\tend\n\n\tAtr_BuyState = ATR_BUY_WAITING_FOR_AH_CAN_SEND;'''
+          if old not in s:
+              raise SystemExit('Could not patch confirmation display')
+          s = s.replace(old, new, 1)
+
+          marker = '''function Atr_Buy_BuyNextOnPage ()\n\n\twhile (#gAtr_Buy_MatchList > 0) do\n\t\t-- Always buy the highest matching row. When Blizzard removes that row,\n\t\t-- every remaining (lower) match index stays valid, exactly as in TSM.\n\n\t\tlocal index = tremove (gAtr_Buy_MatchList);\n\t\tlocal matches = Atr_Buy_RowMatches (index);\n\n\t\tif (matches) then\n\t\t\tgAtr_Buy_Pending = {\n\t\t\t\tprice        = gAtr_Buy_BuyoutPrice,\n\t\t\t\tqty          = gAtr_Buy_StackSize,\n\t\t\t\tt            = GetTime(),\n\t\t\t\tmoneyBefore  = GetMoney(),\n\t\t\t\trowIndex     = index,\n\t\t\t\tlistUpdated  = false,\n\t\t\t\tacknowledged = false,\n\t\t\t};\n\n\t\t\tAtr_BuyState = ATR_BUY_WAITING_FOR_RESULT;\n\t\t\tPlaceAuctionBid ("list", index, gAtr_Buy_BuyoutPrice);\n\t\t\treturn 1;\n\t\tend\n\tend\n\n\treturn 0;\nend'''
+          replacement = '''local function Atr_Buy_BuyValidatedIndex (index)\n\n\tlocal matches = Atr_Buy_RowMatches (index);\n\n\tif (not matches) then\n\t\treturn 0;\n\tend\n\n\tgAtr_Buy_Pending = {\n\t\tprice        = gAtr_Buy_BuyoutPrice,\n\t\tqty          = gAtr_Buy_StackSize,\n\t\tt            = GetTime(),\n\t\tmoneyBefore  = GetMoney(),\n\t\trowIndex     = index,\n\t\tlistUpdated  = false,\n\t\tacknowledged = false,\n\t};\n\n\tAtr_BuyState = ATR_BUY_WAITING_FOR_RESULT;\n\tPlaceAuctionBid ("list", index, gAtr_Buy_BuyoutPrice);\n\treturn 1;\nend\n\n-----------------------------------------\n\nfunction Atr_Buy_BuyNextOnPage ()\n\n\twhile (#gAtr_Buy_MatchList > 0) do\n\t\t-- Always buy the highest matching row. When Blizzard removes that row,\n\t\t-- every remaining (lower) match index stays valid, exactly as in TSM.\n\n\t\tlocal index = tremove (gAtr_Buy_MatchList);\n\n\t\tif (Atr_Buy_BuyValidatedIndex (index) == 1) then\n\t\t\treturn 1;\n\t\tend\n\tend\n\n\treturn 0;\nend\n\n-----------------------------------------\n-- UI bridge only. The selected individual row is still validated and purchased by\n-- the exact same upstream protected-purchase function used by Buy Next.\n-----------------------------------------\n\nfunction Atr_Buy_Multiple_Start ()\n\n\tgAtr_Buy_MultipleRequested = true;\n\tAtr_Buy1_Onclick();\nend\n\nfunction Atr_Buy_Multiple_BuyIndex (index)\n\n\tif (not gAtr_Buy_MultipleMode or Atr_BuyState ~= ATR_BUY_PAGE_READY or gAtr_Buy_Pending ~= nil) then\n\t\treturn 0;\n\tend\n\n\tlocal found = false;\n\tlocal i;\n\tfor i = 1, #gAtr_Buy_MatchList do\n\t\tif (gAtr_Buy_MatchList[i] == index) then\n\t\t\tfound = true;\n\t\t\tbreak;\n\t\tend\n\tend\n\n\tif (not found) then\n\t\treturn 0;\n\tend\n\n\t-- Buying an arbitrary visible row can shift higher AH indexes. Discard every\n\t-- cached index now; the upstream success/failure path will re-query this page.\n\tgAtr_Buy_MatchList = {};\n\n\tif (Atr_BuyMultiple_OnWaiting) then\n\t\tAtr_BuyMultiple_OnWaiting();\n\tend\n\n\treturn Atr_Buy_BuyValidatedIndex (index);\nend'''
+          if marker not in s:
+              raise SystemExit('Could not patch protected purchase helper')
+          s = s.replace(marker, replacement, 1)
+
+          old = '''function Atr_Buy_Cancel (msg, userCancelled)\n\n\tlocal boughtCount = gAtr_Buy_NumBought or 0;\n\tlocal skippedCount = gAtr_Buy_NumSkipped or 0;\n\n\tAtr_Buy_ClearRuntime();'''
+          new = '''function Atr_Buy_Cancel (msg, userCancelled)\n\n\tlocal boughtCount = gAtr_Buy_NumBought or 0;\n\tlocal skippedCount = gAtr_Buy_NumSkipped or 0;\n\tlocal wasMultiple = gAtr_Buy_MultipleMode;\n\tgAtr_Buy_MultipleMode = false;\n\tgAtr_Buy_MultipleRequested = false;\n\n\tif (Atr_BuyMultiple_Hide) then\n\t\tAtr_BuyMultiple_Hide();\n\tend\n\n\tAtr_Buy_ClearRuntime();'''
+          if old not in s:
+              raise SystemExit('Could not patch Atr_Buy_Cancel')
+          s = s.replace(old, new, 1)
+
+          s = s.replace(
+              'if (msg == nil and not userCancelled and (boughtCount > 0 or skippedCount > 0) and Atr_IsChainBuyEnabled()) then',
+              'if (msg == nil and not userCancelled and not wasMultiple and (boughtCount > 0 or skippedCount > 0) and Atr_IsChainBuyEnabled()) then',
+              1
+          )
+
+          p.write_text(s)
+          PY
+
+          cat > Auctionator/AuctionatorBuyMultiple.lua <<'LUA'
+          local addonName, addonTable = ...;
+          local zc = addonTable.zc;
+
+          -- This module is intentionally presentation-only. AuctionatorBuy.lua owns
+          -- the query state, exact row validation, PlaceAuctionBid call, server ACK,
+          -- retries, stale-row handling and displayed-scan updates.
+
+          local frame;
+          local rows = {};
+          local currentMatches = {};
+          local rowsPerPage = 10;
+          local offset = 0;
+          local updateElapsed = 0;
+
+          local function CoinText(copper)
+              if GetCoinTextureString then return GetCoinTextureString(copper or 0); end
+              local v = copper or 0;
+              local g = math.floor(v / 10000);
+              local s = math.floor((v % 10000) / 100);
+              local c = v % 100;
+              return g.."g "..s.."s "..c.."c";
+          end
+
+          local function SetButtonsEnabled(enabled)
+              local i;
+              for i = 1, #rows do
+                  if rows[i]:IsShown() then
+                      if enabled then rows[i].buy:Enable(); else rows[i].buy:Disable(); end
+                  end
+              end
+          end
+
+          local function RefreshRows()
+              if not frame then return; end
+
+              local maxOffset = math.max(0, #currentMatches - rowsPerPage);
+              if offset > maxOffset then offset = maxOffset; end
+              if offset < 0 then offset = 0; end
+
+              local i;
+              for i = 1, rowsPerPage do
+                  local rf = rows[i];
+                  local d = currentMatches[offset + i];
+                  if d then
+                      rf.num:SetText("#"..(offset + i));
+                      rf.item:SetText((d.name or "Unknown").." x"..(d.count or 0));
+                      rf.owner:SetText(d.owner or "Unknown seller");
+                      rf.price:SetText(CoinText(d.price));
+                      rf.index:SetText("AH row "..d.index);
+                      rf.buy.auctionIndex = d.index;
+                      rf:Show();
+                      rf.buy:Enable();
+                  else
+                      rf:Hide();
+                  end
+              end
+
+              if offset > 0 then frame.prev:Enable(); else frame.prev:Disable(); end
+              if offset + rowsPerPage < #currentMatches then frame.next:Enable(); else frame.next:Disable(); end
+
+              if #currentMatches > 0 then
+                  frame.page:SetText(string.format("Showing %d-%d of %d live matching auctions", offset + 1, math.min(#currentMatches, offset + rowsPerPage), #currentMatches));
+              else
+                  frame.page:SetText("No live matching auctions on this page");
+              end
+          end
+
+          local function CreatePicker()
+              if frame then return; end
+
+              frame = CreateFrame("Frame", "Atr_BuyMultiple_Frame", UIParent);
+              frame:SetWidth(640);
+              frame:SetHeight(440);
+              frame:SetPoint("CENTER", UIParent, "CENTER", 0, 0);
+              frame:SetFrameStrata("FULLSCREEN_DIALOG");
+              frame:SetMovable(true);
+              frame:EnableMouse(true);
+              frame:RegisterForDrag("LeftButton");
+              frame:SetBackdrop({
+                  bgFile="Interface\\Tooltips\\UI-Tooltip-Background",
+                  edgeFile="Interface\\Tooltips\\UI-Tooltip-Border",
+                  tile=true, tileSize=16, edgeSize=16,
+                  insets={left=4,right=4,top=4,bottom=4}
+              });
+              frame:SetBackdropColor(0.03,0.03,0.03,0.96);
+              frame:SetBackdropBorderColor(1.0,0.72,0.18,1.0);
+              frame:SetScript("OnDragStart", function(self) self:StartMoving(); end);
+              frame:SetScript("OnDragStop", function(self) self:StopMovingOrSizing(); end);
+              frame:Hide();
+
+              frame.title = frame:CreateFontString(nil,"OVERLAY","GameFontNormalLarge");
+              frame.title:SetPoint("TOP",0,-18);
+              frame.title:SetText("Auctionator - Buy Multiple");
+
+              frame.item = frame:CreateFontString(nil,"OVERLAY","GameFontHighlight");
+              frame.item:SetPoint("TOP",0,-43);
+              frame.item:SetWidth(600);
+              frame.item:SetJustifyH("CENTER");
+
+              frame.help = frame:CreateFontString(nil,"OVERLAY","GameFontNormalSmall");
+              frame.help:SetPoint("TOP",0,-62);
+              frame.help:SetWidth(600);
+              frame.help:SetJustifyH("CENTER");
+              frame.help:SetText("Each line is one live auction. Every Buy click is one protected purchase through the CoA buy engine.");
+
+              local headers = {{"Entry",20},{"Item",68},{"Seller",252},{"Price",390},{"Action",530}};
+              local h;
+              for h = 1, #headers do
+                  local fs=frame:CreateFontString(nil,"OVERLAY","GameFontNormalSmall");
+                  fs:SetPoint("TOPLEFT",frame,"TOPLEFT",headers[h][2],-90);
+                  fs:SetText(headers[h][1]);
+              end
+
+              local i;
+              for i = 1, rowsPerPage do
+                  local rf=CreateFrame("Frame",nil,frame);
+                  rf:SetWidth(598); rf:SetHeight(27);
+                  rf:SetPoint("TOPLEFT",frame,"TOPLEFT",20,-107-((i-1)*28));
+                  rf:SetBackdrop({bgFile="Interface\\Tooltips\\UI-Tooltip-Background"});
+                  rf:SetBackdropColor(0.08,0.08,0.08,0.70);
+
+                  rf.num=rf:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall");
+                  rf.num:SetPoint("LEFT",4,0); rf.num:SetWidth(40); rf.num:SetJustifyH("LEFT");
+                  rf.item=rf:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall");
+                  rf.item:SetPoint("LEFT",50,0); rf.item:SetWidth(178); rf.item:SetJustifyH("LEFT");
+                  rf.owner=rf:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall");
+                  rf.owner:SetPoint("LEFT",234,0); rf.owner:SetWidth(132); rf.owner:SetJustifyH("LEFT");
+                  rf.price=rf:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall");
+                  rf.price:SetPoint("LEFT",372,0); rf.price:SetWidth(120); rf.price:SetJustifyH("LEFT");
+                  rf.index=rf:CreateFontString(nil,"OVERLAY","GameFontDisableSmall");
+                  rf.index:SetPoint("BOTTOMLEFT",50,1); rf.index:SetWidth(178); rf.index:SetJustifyH("LEFT");
+
+                  rf.buy=CreateFrame("Button",nil,rf,"UIPanelButtonTemplate");
+                  rf.buy:SetWidth(74); rf.buy:SetHeight(21); rf.buy:SetPoint("RIGHT",-4,0); rf.buy:SetText("Buy");
+                  rf.buy:SetScript("OnClick",function(self)
+                      if self.auctionIndex and Atr_Buy_Multiple_BuyIndex then
+                          SetButtonsEnabled(false);
+                          frame.status:SetText("Waiting for Auction House confirmation...");
+                          if Atr_Buy_Multiple_BuyIndex(self.auctionIndex) ~= 1 then
+                              frame.status:SetText("That row changed before the click. Refreshing...");
+                          end
+                      end
+                  end);
+                  rows[i]=rf;
+              end
+
+              frame.status=frame:CreateFontString(nil,"OVERLAY","GameFontNormalSmall");
+              frame.status:SetPoint("BOTTOM",0,57); frame.status:SetWidth(590); frame.status:SetJustifyH("CENTER");
+
+              frame.page=frame:CreateFontString(nil,"OVERLAY","GameFontNormalSmall");
+              frame.page:SetPoint("BOTTOM",0,38); frame.page:SetWidth(300); frame.page:SetJustifyH("CENTER");
+
+              frame.prev=CreateFrame("Button",nil,frame,"UIPanelButtonTemplate");
+              frame.prev:SetWidth(90); frame.prev:SetHeight(22); frame.prev:SetPoint("BOTTOMLEFT",20,18); frame.prev:SetText("Prev Rows");
+              frame.prev:SetScript("OnClick",function() offset=math.max(0,offset-rowsPerPage); RefreshRows(); end);
+
+              frame.next=CreateFrame("Button",nil,frame,"UIPanelButtonTemplate");
+              frame.next:SetWidth(90); frame.next:SetHeight(22); frame.next:SetPoint("LEFT",frame.prev,"RIGHT",8,0); frame.next:SetText("Next Rows");
+              frame.next:SetScript("OnClick",function() offset=offset+rowsPerPage; RefreshRows(); end);
+
+              frame.close=CreateFrame("Button",nil,frame,"UIPanelButtonTemplate");
+              frame.close:SetWidth(90); frame.close:SetHeight(22); frame.close:SetPoint("BOTTOMRIGHT",-20,18); frame.close:SetText("Done");
+              frame.close:SetScript("OnClick",function() if Atr_Buy_Cancel then Atr_Buy_Cancel(nil,true); else frame:Hide(); end end);
+          end
+
+          function Atr_BuyMultiple_OnSearching(itemName, stackSize, price)
+              CreatePicker();
+              currentMatches={}; offset=0;
+              frame.item:SetText((itemName or "").." x"..(stackSize or 0).." at "..CoinText(price));
+              frame.status:SetText("Searching and validating live auctions...");
+              frame.page:SetText("");
+              RefreshRows();
+              frame:Show();
+          end
+
+          function Atr_BuyMultiple_OnReady(matchList, itemName, stackSize, price, page)
+              CreatePicker();
+              currentMatches={}; offset=0;
+              local i;
+              for i = 1, #(matchList or {}) do
+                  local index=matchList[i];
+                  local name,_,count,_,_,_,_,_,buyout,_,_,owner=GetAuctionItemInfo("list",index);
+                  if name and count and buyout then
+                      table.insert(currentMatches,{index=index,name=name,count=count,price=buyout,owner=owner});
+                  end
+              end
+              table.sort(currentMatches,function(a,b) return a.index < b.index; end);
+              frame.item:SetText((itemName or "").." x"..(stackSize or 0).." at "..CoinText(price));
+              frame.status:SetText("Page "..((page or 0)+1).." validated. Choose the exact auction to buy.");
+              RefreshRows();
+              frame:Show();
+          end
+
+          function Atr_BuyMultiple_OnWaiting()
+              if frame then
+                  SetButtonsEnabled(false);
+                  frame.status:SetText("Waiting for Auction House confirmation...");
+              end
+          end
+
+          function Atr_BuyMultiple_Hide()
+              if frame then frame:Hide(); end
+              currentMatches={}; offset=0;
+          end
+
+          local controller=CreateFrame("Frame");
+          controller:SetScript("OnUpdate",function(self,elapsed)
+              updateElapsed=updateElapsed+elapsed;
+              if updateElapsed < 0.20 then return; end
+              updateElapsed=0;
+
+              if not Atr_Buy1_Button then return; end
+
+              if not self.button then
+                  self.button=CreateFrame("Button","Atr_BuyMultiple_Button",Atr_Buy1_Button:GetParent(),"UIPanelButtonTemplate");
+                  self.button:SetWidth(105); self.button:SetHeight(22);
+                  self.button:SetPoint("RIGHT",Atr_Buy1_Button,"LEFT",-8,0);
+                  self.button:SetText("Buy Multiple");
+                  self.button:SetScript("OnClick",function()
+                      if Atr_Buy_Multiple_Start then Atr_Buy_Multiple_Start(); end
+                  end);
+              end
+
+              local pane=Atr_GetCurrentPane and Atr_GetCurrentPane();
+              local scan=pane and pane.activeScan;
+              local data=scan and pane.currIndex and scan.sortedData[pane.currIndex];
+              if data and not data.yours and not data.altname and (data.buyoutPrice or 0) > 0 and (data.count or 0) > 1 then
+                  self.button:Enable();
+              else
+                  self.button:Disable();
+              end
+          end);
+          LUA
+
+          python3 <<'PY'
+          from pathlib import Path
+          p=Path('Auctionator/Auctionator.toc')
+          s=p.read_text()
+          needle='AuctionatorBuy.lua\n'
+          if needle not in s:
+              needle='AuctionatorBuy.lua\r\n'
+          if needle not in s:
+              raise SystemExit('Could not locate AuctionatorBuy.lua in TOC')
+          newline='\r\n' if '\r\n' in s else '\n'
+          s=s.replace(needle, 'AuctionatorBuy.lua'+newline+'AuctionatorBuyMultiple.lua'+newline, 1)
+          p.write_text(s)
+          PY
+
+          cat >> README.md <<'EOF'
+
+          ## Madicinal fork addition: individual Buy Multiple picker
+
+          This fork keeps the CoA Ascension buy engine intact and adds a separate **Buy Multiple** button for grouped auction results. The button expands the currently selected group into individual live AH rows so the user can choose exactly which auction to purchase. Each row still performs only one protected purchase per hardware click and routes through the upstream CoA engine for exact item/link/rarity validation, purchase acknowledgement, stale-row handling, retries, and scan updates.
+
+          Legacy pre-migration code is preserved in the `legacy-ascension-multidirect` branch.
+          EOF
+
+      - name: Commit migrated base
+        run: |
+          rm -f .github/workflows/sync-coa-base.yml
+          git config user.name "Madicinal"
+          git config user.email "148298198+Madicinal@users.noreply.github.com"
+          git add -A
+          git commit -m "Rebase on CoA Ascension with individual Buy Multiple UI"
+          git push origin main
