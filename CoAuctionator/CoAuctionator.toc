@@ -2,7 +2,7 @@
 ## Title: CoAuctionator
 ## Version: 2.9.9 (+Mod 1.1)
 ## Author: Zirco; CoA fork by Sleepywalker69; Madicinal mod
-## Dependencies: Auctionator_Pricing_History, Auctionator_Price_Database
+## Dependencies: CoAuctionator_Pricing_History, CoAuctionator_Price_Database
 ## X-Website: https://github.com/Madicinal/Auctionator
 ## X-Localizations: enUS, deDE, ruRU, svSE, frFR, esES
 ## Notes: CoA Ascension Auctionator fork with individual Buy Multiple picker
