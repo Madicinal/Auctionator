@@ -138,6 +138,7 @@ local function CreatePicker()
                 frame.status:SetText("Waiting for Auction House confirmation...");
                 if Atr_Buy_Multiple_BuyIndex(self.auctionIndex) ~= 1 then
                     frame.status:SetText("That row changed before the click. Refreshing...");
+                    if Atr_Buy_QueueQuery then Atr_Buy_QueueQuery(0); end
                 end
             end
         end);
