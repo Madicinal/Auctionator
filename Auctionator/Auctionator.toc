@@ -1,6 +1,6 @@
 ## Interface: 30300
 ## Title: Auctionator
-## Version: 2.9.9
+## Version: 2.9.9 (+Mod 1.0)
 ## Author: Zirco
 ## Dependencies: Auctionator_Pricing_History, Auctionator_Price_Database
 ## X-Website: http://auctionator-addon.com
@@ -28,6 +28,7 @@ Auctionator.lua
 AuctionatorShop.lua
 
 Auctionator.xml
+AuctionatorBuyMultiple.xml
 
 AuctionatorLocalize.lua
 AuctionatorPane.lua
