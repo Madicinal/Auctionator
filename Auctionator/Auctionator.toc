@@ -42,7 +42,7 @@ AuctionatorConflicts.lua
 AuctionatorAPI.lua
 AuctionatorConfig.lua
 AuctionatorBuy.lua
-AuctionatorBuyMultiple.lua
+AuctionatorBuyMultipleMod.lua
 AuctionatorInventory.lua
 
 AuctionatorConfig.xml
