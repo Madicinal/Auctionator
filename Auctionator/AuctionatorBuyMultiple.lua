@@ -11,6 +11,7 @@ local currentMatches = {};
 local rowsPerPage = 10;
 local offset = 0;
 local updateElapsed = 0;
+local lastPurchaseSource = "none";
 
 local function CoinText(copper)
     if GetCoinTextureString then return GetCoinTextureString(copper or 0); end
@@ -134,6 +135,7 @@ local function CreatePicker()
         rf.buy:SetWidth(74); rf.buy:SetHeight(21); rf.buy:SetPoint("RIGHT",-4,0); rf.buy:SetText("Buy");
         rf.buy:SetScript("OnClick",function(self)
             if self.auctionIndex and Atr_Buy_Multiple_BuyIndex then
+                lastPurchaseSource = "Buy Multiple row";
                 SetButtonsEnabled(false);
                 frame.status:SetText("Waiting for Auction House confirmation...");
                 if Atr_Buy_Multiple_BuyIndex(self.auctionIndex) ~= 1 then
@@ -204,30 +206,86 @@ function Atr_BuyMultiple_Hide()
     currentMatches={}; offset=0;
 end
 
+-- Tag the inherited confirmation path so ADDON_ACTION_BLOCKED tells us whether
+-- Ascension rejected the native Buy/Buy Next path or the individual-row path.
+if Atr_Buy_Confirm_OK then
+    local upstreamConfirmOK = Atr_Buy_Confirm_OK;
+    Atr_Buy_Confirm_OK = function(...)
+        lastPurchaseSource = "native Buy / Buy Next";
+        return upstreamConfirmOK(...);
+    end
+end
+
+if Atr_Buy_BuyMatches then
+    local upstreamBuyMatches = Atr_Buy_BuyMatches;
+    Atr_Buy_BuyMatches = function(...)
+        lastPurchaseSource = "legacy Atr_Buy_BuyMatches";
+        return upstreamBuyMatches(...);
+    end
+end
+
+local blockedWatch=CreateFrame("Frame");
+blockedWatch:RegisterEvent("ADDON_ACTION_BLOCKED");
+blockedWatch:RegisterEvent("ADDON_ACTION_FORBIDDEN");
+blockedWatch:SetScript("OnEvent",function(self,event,addonName,functionName)
+    addonName = addonName or arg1;
+    functionName = functionName or arg2;
+    if addonName == "Auctionator" and functionName and string.find(tostring(functionName),"PlaceAuctionBid",1,true) then
+        if zc and zc.msg_atr then
+            zc.msg_atr("Ascension blocked PlaceAuctionBid. Purchase path: "..tostring(lastPurchaseSource));
+        end
+    end
+end);
+
 local controller=CreateFrame("Frame");
+
+local function EnsureBuyMultipleButton()
+    if not Atr_Buy1_Button then return nil; end
+
+    if not controller.button then
+        -- Parent to AuctionFrame rather than the Buy button's content frame. The
+        -- CoA fork creates full-canvas tab panels, and those could cover a late-created
+        -- sibling button depending on skin/frame-level ordering.
+        local parent = AuctionFrame or UIParent;
+        controller.button=CreateFrame("Button","Atr_BuyMultiple_Button",parent,"UIPanelButtonTemplate");
+        controller.button:SetWidth(105);
+        controller.button:SetHeight(22);
+        controller.button:SetPoint("RIGHT",Atr_Buy1_Button,"LEFT",-8,0);
+        controller.button:SetText("Buy Multiple");
+        controller.button:SetFrameStrata(Atr_Buy1_Button:GetFrameStrata());
+        controller.button:SetFrameLevel(math.max((Atr_Buy1_Button:GetFrameLevel() or 1) + 8, (parent:GetFrameLevel() or 1) + 12));
+        controller.button:SetScript("OnClick",function()
+            if Atr_Buy_Multiple_Start then Atr_Buy_Multiple_Start(); end
+        end);
+    end
+
+    return controller.button;
+end
+
 controller:SetScript("OnUpdate",function(self,elapsed)
     updateElapsed=updateElapsed+elapsed;
     if updateElapsed < 0.20 then return; end
     updateElapsed=0;
 
-    if not Atr_Buy1_Button then return; end
+    local button=EnsureBuyMultipleButton();
+    if not button then return; end
 
-    if not self.button then
-        self.button=CreateFrame("Button","Atr_BuyMultiple_Button",Atr_Buy1_Button:GetParent(),"UIPanelButtonTemplate");
-        self.button:SetWidth(105); self.button:SetHeight(22);
-        self.button:SetPoint("RIGHT",Atr_Buy1_Button,"LEFT",-8,0);
-        self.button:SetText("Buy Multiple");
-        self.button:SetScript("OnClick",function()
-            if Atr_Buy_Multiple_Start then Atr_Buy_Multiple_Start(); end
-        end);
+    -- Keep the button physically present next to Buy whenever the native Buy control
+    -- is visible. Disabled state is still shown so users can tell the feature loaded.
+    if Atr_Buy1_Button:IsShown() and (not AuctionFrame or AuctionFrame:IsShown()) then
+        button:Show();
+    else
+        button:Hide();
+        return;
     end
 
     local pane=Atr_GetCurrentPane and Atr_GetCurrentPane();
     local scan=pane and pane.activeScan;
     local data=scan and pane.currIndex and scan.sortedData[pane.currIndex];
+
     if data and not data.yours and not data.altname and (data.buyoutPrice or 0) > 0 and (data.count or 0) > 1 then
-        self.button:Enable();
+        button:Enable();
     else
-        self.button:Disable();
+        button:Disable();
     end
 end);
