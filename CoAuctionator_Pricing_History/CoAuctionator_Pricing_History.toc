@@ -1,0 +1,6 @@
+﻿## Interface: 30300
+## Title: CoAuctionator_Pricing_History
+## Notes: AH pricing history for CoAuctionator
+## OptionalDeps: CoAuctionator
+## LoadOnDemand: 0
+## SavedVariables: AUCTIONATOR_PRICING_HISTORY
