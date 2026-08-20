@@ -1,8 +1,18 @@
-# Auctionator (3.3.5 fork) — Scanning & Selling Overhaul
+# CoAuctionator (3.3.5 fork) — Scanning & Selling Overhaul
 
 A heavily upgraded fork of **Auctionator v2.9.9** for WotLK 3.3.5 clients, backporting the auction database and selling UI from Auctionator v3.2.6 (WoD 6.2) and rebuilding the scanning engine around the reliability patterns used by **TradeSkillMaster v2.8**.
 
-Requires the companion data addons `Auctionator_Price_Database` and `Auctionator_Pricing_History` (they own the saved data so it survives reinstalls of the main addon).
+Requires the companion data addons `CoAuctionator_Price_Database` and `CoAuctionator_Pricing_History` (they own the saved data so it survives reinstalls of the main addon).
+
+Install these three folders together:
+
+```text
+CoAuctionator
+CoAuctionator_Price_Database
+CoAuctionator_Pricing_History
+```
+
+The `CoAuctionator` identity intentionally avoids the Ascension launcher's managed `Auctionator` package. If the launcher restores its own `Auctionator` folder, disable that addon and leave the three `CoAuctionator*` folders enabled.
 
 ---
 
