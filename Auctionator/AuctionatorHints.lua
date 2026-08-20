@@ -38,8 +38,8 @@ function Atr_BuildHints (itemName)
 
 	-- Auctionator Full Scan
 	
-	if (itemName ~= nil and Atr_ScanDB[itemName] ~= nil) then
-		Atr_AppendHint (results, Atr_ScanDB[itemName], ZT("Auctionator scan data"));
+	if (itemName ~= nil and type(gAtr_ScanDB) == "table" and type(gAtr_ScanDB[itemName]) == "table" and gAtr_ScanDB[itemName].mr ~= nil) then
+		Atr_AppendHint (results, gAtr_ScanDB[itemName].mr, ZT("Auctionator scan data"));
 	end
 
 	-- most recent historical price
@@ -211,12 +211,18 @@ function Atr_GetAuctionPrice (item)  -- itemName or itemID
 		return nil;
 	end
 
-	if (Atr_ScanDB[itemName]) then
-		return Atr_ScanDB[itemName];
+	if (gAtr_ScanDB and type (gAtr_ScanDB) ~= "table") then
+		zc.msg_badErr ("Scanning history database appears to be corrupt")
+		zc.msg_badErr ("gAtr_ScanDB:", gAtr_ScanDB)
+		return nil
 	end
-	
+
+	if ((type(gAtr_ScanDB) == "table") and type(gAtr_ScanDB[itemName]) == "table" and gAtr_ScanDB[itemName].mr) then
+		return gAtr_ScanDB[itemName].mr;
+	end
+
 	return Atr_GetMostRecentSale (itemName);
-end	
+end
 
 -----------------------------------------
 
@@ -831,6 +837,12 @@ hooksecurefunc (GameTooltip, "SetAuctionSellItem",
 	end
 );
 
+hooksecurefunc (GameTooltip, "SetMerchantItem",
+	function (tip, index)
+		local num = select(4, GetMerchantItemInfo(index));
+		ShowTipWithPricing  (tip, GetMerchantItemLink(index), num);
+	end
+);
 
 hooksecurefunc (GameTooltip, "SetLootItem",
 	function (tip, slot)

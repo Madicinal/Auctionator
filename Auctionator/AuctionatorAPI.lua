@@ -74,7 +74,34 @@ function Atr_GetDisenchantValue (item)
 	if (itemLink) then
 		return Atr_CalcDisenchantPrice (itemType, itemRarity, itemLevel);
 	end
-	
+
 	return nil;
+end
+
+-----------------------------------------
+
+local DBupdateCallbacks = {};
+
+-----------------------------------------
+
+function Atr_RegisterFor_DBupdated (cbFunc)
+
+	table.insert (DBupdateCallbacks, cbFunc);
+
+end
+
+-----------------------------------------
+
+function Atr_Broadcast_DBupdated (num, kind, binfo)
+
+	local n;
+
+	for n = 1,#DBupdateCallbacks do
+		local cbFunc = DBupdateCallbacks[n]
+		if (type(cbFunc) == "function") then
+			cbFunc(num, kind, binfo)
+		end
+	end
+
 end
 

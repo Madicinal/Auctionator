@@ -514,6 +514,20 @@ function zc.msg_atr (...)
 	zc.msg_yellow ("|cff00ffff<Auctionator>|r", ...);
 end
 
+-----------------------------------------
+
+function zc.msg_anm (...)		-- ver6 name for msg_atr; ported files call this
+
+	zc.msg_atr (...);
+end
+
+-----------------------------------------
+
+function zc.msg_badErr (...)
+
+	zc.msg_red ("|cff00ffff<Auctionator>|r", ...);
+end
+
 
 -----------------------------------------
 
@@ -791,20 +805,118 @@ end
 
 -----------------------------------------
 
-function zc.CopyDeep (src)
+function zc.CopyDeep (a, b)
 
-	local result = {};
+	-- dual-mode: legacy one-arg form returns a copy of a;
+	-- ver6 two-arg form copies b into the table a (returns nothing)
 
-	for n, v in pairs (src) do
-		if (type(v) == "table") then
-			result[n] = zc.CopyDeep(v);
-		else
-			result[n] = v;
+	if (b == nil) then
+
+		local result = {};
+
+		for n, v in pairs (a) do
+			if (type(v) == "table") then
+				result[n] = zc.CopyDeep(v);
+			else
+				result[n] = v;
+			end
+		end
+
+		return result;
+	end
+
+	if (type(b) == "table") then
+		for n, v in pairs (b) do
+			if (type(v) == "table") then
+				a[n] = {};
+				zc.CopyDeep(a[n], v);
+			else
+				a[n] = v;
+			end
 		end
 	end
 
-	return result;
+end
 
+-----------------------------------------
+
+function zc.ClearTable (t)
+
+	for n, v in pairs (t) do
+		t[n] = nil;
+	end
+end
+
+-----------------------------------------
+
+function zc.IsTextQuoted (s)
+
+	return (zc.StringStartsWith (s, "\"") and zc.StringEndsWith (s, "\""));
+end
+
+-----------------------------------------
+
+function zc.QuoteString (s)
+
+	if (zc.IsTextQuoted(s)) then
+		return s;
+	end
+
+	return ("\""..s.."\"");
+end
+
+-----------------------------------------
+
+function zc.TrimQuotes (s)
+
+	local start = 1;
+	local last  = string.len(s);
+
+	if (last > 1) then
+		if (s:sub(1,1) == "\"") then
+			start = 2;
+		end
+		if (s:sub(last,last) == "\"") then
+			last = last-1;
+		end
+	end
+
+	return string.sub (s, start, last);
+end
+
+-----------------------------------------
+
+function zc.LinkFromItemID (itemID, suffixID)	-- only works if item is already in memory
+
+	if (suffixID == nil) then
+		suffixID = 0;
+	end
+
+	local itemString = "item:"..itemID..":0:0:0:0:0:"..suffixID..":0";
+
+	local _, itemLink = GetItemInfo(itemString);
+
+	return itemLink;
+end
+
+-----------------------------------------
+
+function zc.PullItemIntoMemory (itemID, suffixID)
+
+	if (suffixID == nil) then
+		suffixID = 0;
+	end
+
+	local itemString = "item:"..itemID..":0:0:0:0:0:"..suffixID..":0";
+
+	local _, itemLink = GetItemInfo(itemString);
+
+	if (itemLink == nil and AtrScanningTooltip) then
+		AtrScanningTooltip:SetHyperlink(itemString);
+		_, itemLink = GetItemInfo(itemString);
+	end
+
+	return itemLink;
 end
 
 -----------------------------------------

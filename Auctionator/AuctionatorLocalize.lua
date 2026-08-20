@@ -45,6 +45,10 @@ function ZT (s)
 	return s;
 end
 
+-----------------------------------------
+
+addonTable.ztt = { ZT = ZT };		-- ported ver6 files resolve ZT via addonTable.ztt at load time
+gAtr_ZT = ZT;
 
 -----------------------------------------
 

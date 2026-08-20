@@ -12,12 +12,11 @@
 		<OnUpdate>
 			Atr_OnUpdate(self, elapsed);
 		</OnUpdate>
-         <OnEvent> 
+         <OnEvent>
             Atr_EventHandler();
-         </OnEvent> 
-      </Scripts> 
-   </Frame> 
-
+         </OnEvent>
+      </Scripts>
+   </Frame>
 
 
 	<Frame name="Atr_Error_Frame" toplevel="true" parent="UIParent" enableMouse="true" frameStrata="FULLSCREEN_DIALOG" hidden="true">
@@ -122,7 +121,6 @@
 				</Anchor>
 			</Anchors>
 		</ButtonText>
-		<NormalFont style="GameFontHighlightSmall"/>
 		<NormalTexture name="$parentArrow" file="Interface\Buttons\UI-SortArrow">
 			<Size><AbsDimension x="9" y="8"/></Size>
 			<Anchors>
@@ -297,6 +295,11 @@
 					<Anchors><Anchor point="TOP"><Offset><AbsDimension x="-100" y="-18"/></Offset></Anchor></Anchors>
 				</FontString>
 
+				<FontString name="Atr_ActiveItems_Text" inherits="GameFontHighlightSmall" text="Active Items" justifyH="CENTER">
+					<Size><AbsDimension x="170" y="12"/></Size>
+					<Anchors><Anchor point="TOPLEFT"><Offset><AbsDimension x="-193" y="-60"/></Offset></Anchor></Anchors>
+				</FontString>
+
 				<FontString name="AuctionatorMessageFrame" inherits="GameFontNormal">
 					<Anchors><Anchor point="TOP"><Offset><AbsDimension x="8" y="-100"/></Offset></Anchor></Anchors>
 				</FontString>
@@ -360,9 +363,6 @@
 				<Scripts>
 					<OnClick>Atr_CheckActive_OnClick(false);</OnClick>
 				</Scripts>
-				<NormalFont style="GameFontNormalSmall"/>
-				<HighlightFont style="GameFontHighlightSmall"/>
-				<DisabledFont style="GameFontDisableSmall"/>
 			</Button>
 
 <!--
@@ -372,9 +372,6 @@
 				<Scripts>
 					<OnClick>Atr_Cancel_Undercuts_OnClick();</OnClick>
 				</Scripts>
-				<NormalFont style="GameFontNormalSmall"/>
-				<HighlightFont style="GameFontHighlightSmall"/>
-				<DisabledFont style="GameFontDisableSmall"/>
 			</Button>
 -->
 
@@ -383,6 +380,19 @@
 				<Size><AbsDimension x="260" y="20"/></Size>
 				<Anchors><Anchor point="TOPLEFT"><Offset><AbsDimension x="20" y="-45"/></Offset></Anchor></Anchors>
 				<FontString inherits="ChatFontNormal" bytes="64"/>
+
+				<Frames>
+					<Button name="Atr_Search_ClearBut" inherits="UIPanelCloseButton">
+						<Size><AbsDimension x="20" y="20"/></Size>
+						<Anchors><Anchor point="RIGHT"><Offset><AbsDimension x="4" y="0"/></Offset></Anchor></Anchors>
+						<Scripts>
+							<OnClick>
+								Atr_Search_Box:SetText("");
+								Atr_Search_Box:SetFocus();
+							</OnClick>
+						</Scripts>
+					</Button>
+				</Frames>
 
 				<Scripts>
 					<OnEnterPressed>
@@ -408,10 +418,10 @@
 			</EditBox>
 
 			<Button name="Atr_Search_Button" text="Search" inherits="UIPanelButtonTemplate" >
-				<Size><AbsDimension x="80" y="22"/>	</Size>
+				<Size><AbsDimension x="78" y="22"/>	</Size>
 				<Anchors>
 					<Anchor point="LEFT" relativeTo="Atr_Search_Box" relativePoint="RIGHT">
-						<Offset><AbsDimension x="15" y="0"/></Offset>
+						<Offset><AbsDimension x="5" y="0"/></Offset>
 					</Anchor>
 				</Anchors>
 				<Scripts>
@@ -421,42 +431,74 @@
 				</Scripts>
 			</Button>
 
-			<Button name="Atr_Adv_Search_Button" text="+" inherits="UIPanelButtonTemplate" >
-				<Size><AbsDimension x="24" y="18"/>	</Size>
+			<CheckButton name="Atr_Adv_Search_Button" inherits="UICheckButtonTemplate">
+				<Size><AbsDimension x="20" y="20" /></Size>
 				<Anchors>
 					<Anchor point="LEFT" relativeTo="Atr_Search_Button" relativePoint="RIGHT">
-						<Offset><AbsDimension x="4" y="0"/></Offset>
+						<Offset><AbsDimension x="6" y="8"/></Offset>
 					</Anchor>
 				</Anchors>
+				<Layers>
+					<Layer level="BACKGROUND">
+						<FontString inherits="GameFontNormalSmall" text="Advanced">
+							<Anchors>
+								<Anchor point="LEFT" relativePoint="RIGHT">
+									<Offset><AbsDimension x="2" y="1"/></Offset>
+								</Anchor>
+							</Anchors>
+						</FontString>
+					</Layer>
+				</Layers>
+				<Scripts>
+					<OnClick>	Atr_Adv_Search_Onclick ();	</OnClick>
+				</Scripts>
+			</CheckButton>
+
+			<CheckButton name="Atr_Exact_Search_Button" inherits="UICheckButtonTemplate">
+				<Size><AbsDimension x="20" y="20" /></Size>
+				<Anchors>
+					<Anchor point="TOP" relativeTo="Atr_Adv_Search_Button" relativePoint="BOTTOM">
+						<Offset><AbsDimension x="0" y="5"/></Offset>
+					</Anchor>
+				</Anchors>
+				<Layers>
+					<Layer level="BACKGROUND">
+						<FontString inherits="GameFontNormalSmall" text="Exact Match">
+							<Anchors>
+								<Anchor point="LEFT" relativePoint="RIGHT">
+									<Offset><AbsDimension x="2" y="1"/></Offset>
+								</Anchor>
+							</Anchors>
+						</FontString>
+					</Layer>
+				</Layers>
+				<Scripts>
+					<OnClick>	Atr_Exact_Search_Onclick ();	</OnClick>
+				</Scripts>
+			</CheckButton>
+
+			<Button name="Auctionator1Button" inherits="UIPanelButtonTemplate" text="Options...">
+				<Size><AbsDimension x="74" y="18"/>	</Size>
+				<Anchors><Anchor point="TOPRIGHT" relativePoint="TOPRIGHT"><Offset><AbsDimension x="-14" y="-38"/></Offset></Anchor></Anchors>
 				<Scripts>
 					<OnClick>
-						Atr_Adv_Search_Onclick();
+						InterfaceOptionsFrame_OpenToCategory ("Auctionator");	-- seems to be a bug that requires we do this so that it works the first time someone clicks Options
+						local f = _G["Atr_BasicOptionsFrame"];
+						if (f) then
+							InterfaceOptionsFrame_OpenToCategory (f);
+						else
+							InterfaceOptionsFrame_OpenToCategory ("Auctionator");
+						end
 					</OnClick>
 				</Scripts>
 			</Button>
 
-			<Button name="Auctionator1Button" inherits="UIPanelButtonTemplate" text="Options">
-				<Size><AbsDimension x="70" y="18"/>	</Size>
-				<Anchors><Anchor point="LEFT" relativeTo="Atr_Search_Button" relativePoint="RIGHT"><Offset><AbsDimension x="165" y="0"/></Offset></Anchor></Anchors>
-				<Scripts>
-					<OnClick>
-						InterfaceOptionsFrame_OpenToCategory ("Auctionator");
-					</OnClick>
-				</Scripts>
-				<NormalFont style="GameFontNormalSmall"/>
-				<HighlightFont style="GameFontHighlightSmall"/>
-				<DisabledFont style="GameFontDisableSmall"/>
-			</Button>
-			
 			<Button name="Atr_FullScanButton" inherits="UIPanelButtonTemplate" text="Full Scan...">
 				<Size><AbsDimension x="74" y="18"/>	</Size>
-				<Anchors><Anchor point="RIGHT" relativeTo="Auctionator1Button" relativePoint="LEFT"><Offset><AbsDimension x="-2" y="0"/></Offset></Anchor></Anchors>
+				<Anchors><Anchor point="TOPLEFT" relativeTo="Auctionator1Button" relativePoint="BOTTOMLEFT"><Offset><AbsDimension x="0" y="2"/></Offset></Anchor></Anchors>
 				<Scripts>
 					<OnClick>Atr_ShowFullScanFrame();</OnClick>
 				</Scripts>
-				<NormalFont style="GameFontNormalSmall"/>
-				<HighlightFont style="GameFontHighlightSmall"/>
-				<DisabledFont style="GameFontDisableSmall"/>
 			</Button>
 			
 			
@@ -512,14 +554,6 @@
 						<FontString name="Atr_Batch_Stacksize_Text" inherits="GameFontNormal" text="stacks of" justifyH="CENTER">
 							<Size><AbsDimension x="82" y="22"/></Size>
 							<Anchors><Anchor point="TOPLEFT"><Offset><AbsDimension x="55" y="-208"/></Offset></Anchor></Anchors>
-						</FontString>
-
-						<FontString name="Atr_Batch_MaxAuctions_Text" inherits="GameFontDarkGraySmall">
-							<Anchors><Anchor point="TOPLEFT" relativeTo="Atr_Batch_Stacksize_Text"><Offset><AbsDimension x="-34" y="-21"/></Offset></Anchor></Anchors>
-						</FontString>
-
-						<FontString name="Atr_Batch_MaxStacksize_Text" inherits="GameFontDarkGraySmall">
-							<Anchors><Anchor point="TOPLEFT" relativeTo="Atr_Batch_Stacksize_Text"><Offset><AbsDimension x="79" y="-21"/></Offset></Anchor></Anchors>
 						</FontString>
 
 						<FontString name="Atr_StartingPriceText" inherits="GameFontHighlightSmall" text="Starting Price" hidden="true">
@@ -639,6 +673,40 @@
 							<OnTabPressed>		Atr_Batch_NumAuctions:SetFocus()	</OnTabPressed>
 						</Scripts>
 					</EditBox>
+
+					<!-- clickable "max: N" hints under each quantity box -->
+
+					<Button name="Atr_Batch_MaxAuctions_Text">
+						<Size><AbsDimension x="74" y="14"/></Size>
+						<Anchors><Anchor point="TOPLEFT" relativeTo="Atr_Batch_Stacksize_Text"><Offset><AbsDimension x="-40" y="-21"/></Offset></Anchor></Anchors>
+						<Scripts>
+							<OnClick>Atr_SellSetMaxAuctions();</OnClick>
+							<OnEnter>
+								GameTooltip:SetOwner(self, "ANCHOR_RIGHT");
+								GameTooltip:SetText(gAtr_ZT and gAtr_ZT("Click to post the maximum number of stacks") or "Click to post the maximum number of stacks");
+								GameTooltip:Show();
+							</OnEnter>
+							<OnLeave>GameTooltip:Hide();</OnLeave>
+						</Scripts>
+						<NormalFont style="GameFontDarkGraySmall"/>
+						<HighlightFont style="GameFontHighlightSmall"/>
+					</Button>
+
+					<Button name="Atr_Batch_MaxStacksize_Text">
+						<Size><AbsDimension x="74" y="14"/></Size>
+						<Anchors><Anchor point="TOPLEFT" relativeTo="Atr_Batch_Stacksize_Text"><Offset><AbsDimension x="73" y="-21"/></Offset></Anchor></Anchors>
+						<Scripts>
+							<OnClick>Atr_SellSetMaxStacksize();</OnClick>
+							<OnEnter>
+								GameTooltip:SetOwner(self, "ANCHOR_RIGHT");
+								GameTooltip:SetText(gAtr_ZT and gAtr_ZT("Click to use the full stack size") or "Click to use the full stack size");
+								GameTooltip:Show();
+							</OnEnter>
+							<OnLeave>GameTooltip:Hide();</OnLeave>
+						</Scripts>
+						<NormalFont style="GameFontDarkGraySmall"/>
+						<HighlightFont style="GameFontHighlightSmall"/>
+					</Button>
 					
 					<Button name="Atr_CreateAuctionButton" inherits="UIPanelButtonTemplate"  text="Create Auction" disabled="true">
 						<Size><AbsDimension x="185" y="30"/>	</Size>
@@ -712,50 +780,52 @@
 				</Scripts>
 			</Button>
 
-			<Button name="Atr_AddToSListButton" inherits="UIPanelButtonTemplate"  text="Add Item To List" disabled="true">
-				<Size><AbsDimension x="195" y="20"/>	</Size>
+			<Button name="Atr_AddToSListButton" inherits="UIPanelButtonTemplate"  text="Add Item" disabled="true">
+				<Size><AbsDimension x="97" y="20"/>	</Size>
 				<Anchors><Anchor point="TOPLEFT"><Offset><AbsDimension x="-195" y="-329"/></Offset></Anchor></Anchors>
 				<Scripts>
 					<OnClick>Atr_AddToSListOnClick();</OnClick>
 				</Scripts>
-				<NormalFont style="GameFontNormalSmall"/>
-				<HighlightFont style="GameFontHighlightSmall"/>
-				<DisabledFont style="GameFontDisableSmall"/>
 			</Button>
 
-			<Button name="Atr_RemFromSListButton" inherits="UIPanelButtonTemplate"  text="Remove Item From List" disabled="true">
-				<Size><AbsDimension x="195" y="20"/>	</Size>
-				<Anchors><Anchor point="TOPLEFT"><Offset><AbsDimension x="-195" y="-349"/></Offset></Anchor></Anchors>
+			<Button name="Atr_RemFromSListButton" inherits="UIPanelButtonTemplate"  text="Remove Item" disabled="true">
+				<Size><AbsDimension x="101" y="20"/>	</Size>
+				<Anchors><Anchor point="TOPLEFT"><Offset><AbsDimension x="-100" y="-329"/></Offset></Anchor></Anchors>
 				<Scripts>
 					<OnClick>Atr_RemFromSListOnClick();</OnClick>
 				</Scripts>
-				<NormalFont style="GameFontNormalSmall"/>
-				<HighlightFont style="GameFontHighlightSmall"/>
-				<DisabledFont style="GameFontDisableSmall"/>
 			</Button>
 
+			<Button name="Atr_SrchSListButton" inherits="UIPanelButtonTemplate"  text="Search for All Items" disabled="true">
+				<Size><AbsDimension x="195" y="20"/>	</Size>
+				<Anchors><Anchor point="TOPLEFT"><Offset><AbsDimension x="-195" y="-349"/></Offset></Anchor></Anchors>
+				<Scripts>
+					<OnClick>Atr_SrchSList_OnClick();</OnClick>
+				</Scripts>
+			</Button>
 
-			<Button name="Atr_DelSListButton" inherits="UIPanelButtonTemplate"  text="Delete Shopping List" disabled="true">
+			<Button name="Atr_MngSListsButton" inherits="UIPanelButtonTemplate"  text="Manage Shopping Lists" disabled="true">
 				<Size><AbsDimension x="195" y="20"/>	</Size>
 				<Anchors><Anchor point="TOPLEFT"><Offset><AbsDimension x="-195" y="-369"/></Offset></Anchor></Anchors>
 				<Scripts>
-					<OnClick>Atr_DelSList_OnClick();</OnClick>
+					<OnClick>Atr_MngSLists_OnClick();</OnClick>
 				</Scripts>
-				<NormalFont style="GameFontNormalSmall"/>
-				<HighlightFont style="GameFontHighlightSmall"/>
-				<DisabledFont style="GameFontDisableSmall"/>
 			</Button>
 
-
-			<Button name="Atr_NewSListButton" inherits="UIPanelButtonTemplate"  text="New Shopping List">
-				<Size><AbsDimension x="195" y="20"/>	</Size>
+			<Button name="Atr_DelSListButton" inherits="UIPanelButtonTemplate"  text="Delete List" disabled="true">
+				<Size><AbsDimension x="97" y="20"/>	</Size>
 				<Anchors><Anchor point="TOPLEFT"><Offset><AbsDimension x="-195" y="-389"/></Offset></Anchor></Anchors>
+				<Scripts>
+					<OnClick>Atr_DelSList_OnClick();</OnClick>
+				</Scripts>
+			</Button>
+
+			<Button name="Atr_NewSListButton" inherits="UIPanelButtonTemplate"  text="New List">
+				<Size><AbsDimension x="101" y="20"/>	</Size>
+				<Anchors><Anchor point="TOPLEFT"><Offset><AbsDimension x="-100" y="-389"/></Offset></Anchor></Anchors>
 				<Scripts>
 					<OnClick>Atr_NewSlist_OnClick();</OnClick>
 				</Scripts>
-				<NormalFont style="GameFontNormalSmall"/>
-				<HighlightFont style="GameFontHighlightSmall"/>
-				<DisabledFont style="GameFontDisableSmall"/>
 			</Button>
 
 
@@ -810,9 +880,6 @@
 						Atr_CancelSelection_OnClick();
 					</OnClick>
 				</Scripts>
-				<NormalFont style="GameFontNormalSmall"/>
-				<HighlightFont style="GameFontHighlightSmall"/>
-				<DisabledFont style="GameFontDisableSmall"/>
 			</Button>
 
 			<Button name="Atr_Buy1_Button" text="Buy" inherits="UIPanelButtonTemplate" >
@@ -823,13 +890,6 @@
 				</Scripts>
 			</Button>
 
-			<Button name="Atr_Buy_Multiple_Button" text="Buy Multiple" inherits="UIPanelButtonTemplate" >
-				<Size><AbsDimension x="105" y="22"/>	</Size>
-				<Anchors><Anchor point="RIGHT" relativeTo="Atr_Buy1_Button" relativePoint="LEFT"><Offset><AbsDimension x="4" y="0"/></Offset></Anchor></Anchors>
-				<Scripts>
-					<OnClick>Atr_Buy_Multiple_Onclick();</OnClick>
-				</Scripts>
-			</Button>
 
 
 			<ScrollFrame name="AuctionatorScrollFrame" inherits="FauxScrollFrameTemplate">
@@ -890,13 +950,16 @@
 				</Layers>
 				
 				<Frames>
+					<Button name="Atr_SaveThisList_Button" text="Save this Shopping List" inherits="UIPanelButtonTemplate"  hidden="true">
+						<Size><AbsDimension x="200" y="20"/></Size>
+						<Anchors><Anchor point="TOPLEFT"><Offset><AbsDimension x="8" y="8"/></Offset></Anchor></Anchors>
+						<Scripts><OnClick>Atr_Onclick_SaveTempList()</OnClick></Scripts>
+					</Button>
+
 					<Button name="Atr_Back_Button" text="Back" inherits="UIPanelButtonTemplate"  hidden="true">
 						<Size><AbsDimension x="70" y="18"/></Size>
 						<Anchors><Anchor point="TOPLEFT"><Offset><AbsDimension x="8" y="5"/></Offset></Anchor></Anchors>
 						<Scripts><OnClick>Atr_Onclick_Back()</OnClick></Scripts>
-						<NormalFont style="GameFontNormalSmall"/>
-						<HighlightFont style="GameFontHighlightSmall"/>
-						<DisabledFont style="GameFontDisableSmall"/>
 					</Button>
 
 					<Button name="Atr_Col1_Heading_Button" text="Lowest Price" inherits="Atr_Col_Heading_Template"  hidden="true">
@@ -914,6 +977,58 @@
 				</Frames>
 			</Frame>
 
+			<CheckButton name="Atr_HideBidOnly_Button" inherits="UICheckButtonTemplate">
+				<Size><AbsDimension x="20" y="20" /></Size>
+				<Anchors>
+					<Anchor point="BOTTOMLEFT" relativeTo="Atr_HeadingsBar" relativePoint="TOPLEFT"><Offset><AbsDimension x="4" y="-24"/></Offset></Anchor>
+				</Anchors>
+				<Layers>
+					<Layer level="BACKGROUND">
+						<FontString inherits="GameFontNormalSmall" text="Hide bid-only">
+							<Anchors><Anchor point="LEFT" relativePoint="RIGHT"><Offset><AbsDimension x="2" y="1"/></Offset></Anchor></Anchors>
+						</FontString>
+					</Layer>
+				</Layers>
+				<Scripts>
+					<OnShow>	Atr_HideBidOnly_OnShow ();	</OnShow>
+					<OnClick>	Atr_HideBidOnly_Onclick ();	</OnClick>
+				</Scripts>
+			</CheckButton>
+			<CheckButton name="Atr_Chain_Buy_Button" inherits="UICheckButtonTemplate" hidden="true">
+				<Size><AbsDimension x="20" y="20" /></Size>
+				<Anchors><Anchor point="LEFT" relativeTo="Atr_HideBidOnly_Button" relativePoint="RIGHT"><Offset><AbsDimension x="100" y="0"/></Offset></Anchor></Anchors>
+				<Layers>
+					<Layer level="BACKGROUND">
+						<FontString inherits="GameFontNormalSmall" text="Chain Buy">
+							<Anchors><Anchor point="LEFT" relativePoint="RIGHT"><Offset><AbsDimension x="2" y="1"/></Offset></Anchor></Anchors>
+						</FontString>
+					</Layer>
+				</Layers>
+				<Scripts>
+					<OnShow>	Atr_ChainBuy_OnShow ();	</OnShow>
+					<OnClick>	Atr_ChainBuy_Toggle ();	</OnClick>
+				</Scripts>
+			</CheckButton>
+
+			<!-- occupies the same slot as Chain Buy: that one is Buy-tab-only and
+			     this one is Sell-tab-only, so they can never stack -->
+
+			<CheckButton name="Atr_MatchRarity_Button" inherits="UICheckButtonTemplate" hidden="true">
+				<Size><AbsDimension x="20" y="20" /></Size>
+				<Anchors><Anchor point="LEFT" relativeTo="Atr_HideBidOnly_Button" relativePoint="RIGHT"><Offset><AbsDimension x="100" y="0"/></Offset></Anchor></Anchors>
+				<Layers>
+					<Layer level="BACKGROUND">
+						<FontString inherits="GameFontNormalSmall" text="My rarity only">
+							<Anchors><Anchor point="LEFT" relativePoint="RIGHT"><Offset><AbsDimension x="2" y="1"/></Offset></Anchor></Anchors>
+						</FontString>
+					</Layer>
+				</Layers>
+				<Scripts>
+					<OnShow>	Atr_MatchRarity_OnShow ();	</OnShow>
+					<OnClick>	Atr_MatchRarity_Onclick ();	</OnClick>
+				</Scripts>
+			</CheckButton>
+
 			<Frame name="Atr_ListTabs" hidden="true">
 				<Size><AbsDimension x="250" y="40"/></Size>
 				<Anchors><Anchor point="BOTTOMRIGHT" relativeTo="Atr_HeadingsBar" relativePoint="TOPRIGHT"><Offset><AbsDimension x="0" y="-22"/></Offset></Anchor></Anchors>
@@ -921,15 +1036,15 @@
 				<Frames>
 					<Button name="$parentTab3" inherits="TabButtonTemplate" id="3" text="Other">
 						<Anchors><Anchor point="BOTTOMRIGHT" ><Offset><AbsDimension x="-8" y="0"/></Offset></Anchor></Anchors>
-						<Scripts><OnClick>PanelTemplates_SetTab(Atr_ListTabs, 3);Atr_ShowWhichRB(3);</OnClick></Scripts>
+						<Scripts><OnClick>Atr_ListTabOnClick(3);</OnClick></Scripts>
 					</Button>
-					<Button name="$parentTab2" inherits="TabButtonTemplate" id="2" text="Past">
+					<Button name="$parentTab2" inherits="TabButtonTemplate" id="2" text="History">
 						<Anchors><Anchor point="RIGHT" relativeTo="$parentTab3" relativePoint="LEFT"><Offset><AbsDimension x="-2" y="0"/></Offset></Anchor></Anchors>
-						<Scripts><OnClick>PanelTemplates_SetTab(Atr_ListTabs, 2);Atr_ShowWhichRB(2);</OnClick></Scripts>
+						<Scripts><OnClick>Atr_ListTabOnClick(2);</OnClick></Scripts>
 					</Button>
 					<Button name="$parentTab1" inherits="TabButtonTemplate" id="1" text="Current">
 						<Anchors><Anchor point="RIGHT" relativeTo="$parentTab2" relativePoint="LEFT"><Offset><AbsDimension x="-2" y="0"/></Offset></Anchor></Anchors>
-						<Scripts><OnClick>PanelTemplates_SetTab(Atr_ListTabs, 1);Atr_ShowWhichRB(1);</OnClick></Scripts>
+						<Scripts><OnClick>Atr_ListTabOnClick(1);</OnClick></Scripts>
 					</Button>
 				</Frames>
 				<Scripts>
@@ -939,7 +1054,6 @@
 					</OnLoad>
 					<OnShow>
 						PlaySound("UChatScrollButton");
-						PanelTemplates_SetTab(Atr_ListTabs, 1);
 					</OnShow>
 					<OnHide>
 						PlaySound("UChatScrollButton");
@@ -1002,27 +1116,10 @@
    <!-- Buy Confirmation screen --> 
 
 	<Frame name="Atr_Buy_Confirm_Frame" inherits="AuctionatorDialog" toplevel="true" parent="UIParent" frameStrata="FULLSCREEN_DIALOG" enableMouse="true" hidden="true">
-		<Size><AbsDimension x="390" y="180" /></Size>		
+		<Size><AbsDimension x="430" y="180" /></Size>
 		<Anchors><Anchor point="TOPLEFT"><Offset><AbsDimension x="270" y="-290"/></Offset></Anchor></Anchors>
 
 		<Scripts>
-			<OnLoad>
-				self:SetMovable(true);
-				self:RegisterForDrag("LeftButton");
-				self:SetBackdropColor(0.03, 0.03, 0.03, 0.55);
-				self:SetBackdropBorderColor(1.0, 0.72, 0.18, 0.95);
-			</OnLoad>
-			<OnShow>
-				Atr_Mask:Hide();
-				self:SetBackdropColor(0.03, 0.03, 0.03, 0.55);
-				self:SetBackdropBorderColor(1.0, 0.72, 0.18, 0.95);
-			</OnShow>
-			<OnDragStart>
-				self:StartMoving();
-			</OnDragStart>
-			<OnDragStop>
-				self:StopMovingOrSizing();
-			</OnDragStop>
 			<OnUpdate>
 				Atr_Buy_Confirm_Update();
 			</OnUpdate>
@@ -1033,49 +1130,14 @@
 				<FontString name="Atr_Buy_Confirm_ItemName" inherits="GameFontNormal">
 					<Anchors><Anchor point="TOPLEFT"><Offset><AbsDimension x="40" y="-34"/></Offset></Anchor></Anchors>
 				</FontString>
-				<FontString name="Atr_Buy_Session_Text" inherits="GameFontNormalSmall" justifyH="CENTER">
-					<Size><AbsDimension x="330" y="16"/></Size>
-					<Anchors><Anchor point="TOP"><Offset><AbsDimension x="0" y="-108"/></Offset></Anchor></Anchors>
+
+				<FontString name="Atr_Buy_Chain_Text" inherits="GameFontHighlightSmall" justifyH="LEFT" hidden="true">
+					<Anchors><Anchor point="BOTTOMLEFT"><Offset><AbsDimension x="30" y="31"/></Offset></Anchor></Anchors>
 				</FontString>
 			</Layer>
 		</Layers>
 
 		<Frames>
-			<Frame name="Atr_Buy_Header_Frame" parent="Atr_Buy_Confirm_Frame" enableMouse="true">
-				<Size><AbsDimension x="240" y="34"/></Size>
-				<Anchors><Anchor point="BOTTOM" relativePoint="TOP"><Offset><AbsDimension x="0" y="-2"/></Offset></Anchor></Anchors>
-				<Backdrop bgFile="Interface\Tooltips\UI-Tooltip-Background" edgeFile="Interface\Tooltips\UI-Tooltip-Border" tile="true">
-					<BackgroundInsets><AbsInset left="4" right="4" top="4" bottom="4"/></BackgroundInsets>
-					<TileSize><AbsValue val="16"/></TileSize>
-					<EdgeSize><AbsValue val="16"/></EdgeSize>
-				</Backdrop>
-				<Scripts>
-					<OnLoad>
-						self:SetBackdropColor(0.07, 0.05, 0.015, 0.88);
-						self:SetBackdropBorderColor(1.0, 0.72, 0.18, 1.0);
-						self:RegisterForDrag("LeftButton");
-					</OnLoad>
-					<OnShow>
-						self:SetBackdropColor(0.07, 0.05, 0.015, 0.88);
-						self:SetBackdropBorderColor(1.0, 0.72, 0.18, 1.0);
-					</OnShow>
-					<OnDragStart>
-						Atr_Buy_Confirm_Frame:StartMoving();
-					</OnDragStart>
-					<OnDragStop>
-						Atr_Buy_Confirm_Frame:StopMovingOrSizing();
-					</OnDragStop>
-				</Scripts>
-				<Layers>
-					<Layer level="ARTWORK">
-						<FontString name="Atr_Buy_Header_Text" inherits="GameFontNormalLarge" justifyH="CENTER" text="|TInterface\MoneyFrame\UI-GoldIcon:14:14:0:0|t  Auctionator  |TInterface\MoneyFrame\UI-GoldIcon:14:14:0:0|t">
-							<Size><AbsDimension x="220" y="20"/></Size>
-							<Anchors><Anchor point="CENTER"><Offset><AbsDimension x="0" y="0"/></Offset></Anchor></Anchors>
-							<Color r="1.0" g="0.82" b="0.25"/>
-						</FontString>
-					</Layer>
-				</Layers>
-			</Frame>
 
 			<Frame name="Atr_Buy_Part1">
 				<Anchors>
@@ -1094,7 +1156,7 @@
 						</FontString>
 
 						<FontString name="Atr_Buy_Confirm_Text2" inherits="GameFontNormal" text="stacks for:">
-							<Anchors><Anchor point="TOPLEFT"><Offset><AbsDimension x="160" y="-79"/></Offset></Anchor></Anchors>
+							<Anchors><Anchor point="TOPLEFT"><Offset><AbsDimension x="204" y="-79"/></Offset></Anchor></Anchors>
 						</FontString>
 					</Layer>
 				</Layers>
@@ -1102,7 +1164,7 @@
 				<Frames>
 					<Frame name="Atr_Buy_Confirm_TotalPrice" inherits="SmallMoneyFrameTemplate">
 						<Size><AbsDimension x="125" y="16" /></Size>
-						<Anchors><Anchor point="TOPLEFT" relativeTo="Atr_Buy_Confirm_Text1"><Offset><AbsDimension x="160" y="2"/></Offset></Anchor></Anchors>
+						<Anchors><Anchor point="TOPLEFT" relativeTo="Atr_Buy_Confirm_Text1"><Offset><AbsDimension x="204" y="2"/></Offset></Anchor></Anchors>
 						<Scripts><OnLoad>AuctionatorMoneyFrame_OnLoad();</OnLoad></Scripts>
 					</Frame>
 
@@ -1116,6 +1178,14 @@
 						</Anchors>
 						<FontString inherits="ChatFontNormal" bytes="64" justifyH="CENTER" />
 					</EditBox>
+
+					<Button name="Atr_Buy_Confirm_MaxBut" inherits="UIPanelButtonTemplate" text="Max">
+						<Size><AbsDimension x="38" y="18"/></Size>
+						<Anchors><Anchor point="LEFT" relativeTo="Atr_Buy_Confirm_Numstacks" relativePoint="RIGHT"><Offset><AbsDimension x="4" y="0"/></Offset></Anchor></Anchors>
+						<Scripts>
+							<OnClick>Atr_Buy_SetMax();</OnClick>
+						</Scripts>
+					</Button>
 				</Frames>
 			</Frame>
 
@@ -1139,29 +1209,10 @@
 				<Anchors><Anchor point="BOTTOMRIGHT"><Offset><AbsDimension x="-20" y="25"/></Offset></Anchor></Anchors>
 				<Scripts>
 					<OnClick>
-						Atr_Buy_Cancel();
+						Atr_Buy_Cancel(nil, true);
 					</OnClick>
 				</Scripts>
 			</Button>
-
-			<CheckButton name="Atr_Buy_Chain_CB" inherits="UICheckButtonTemplate" hidden="true">
-				<Size><AbsDimension x="26" y="26"/></Size>
-				<Anchors><Anchor point="BOTTOMLEFT"><Offset><AbsDimension x="60" y="21"/></Offset></Anchor></Anchors>
-				<Layers>
-					<Layer level="BACKGROUND">
-						<FontString name="Atr_Buy_Chain_Text" inherits="GameFontNormalSmall" text="Chain buy - individual rows">
-							<Anchors>
-								<Anchor point="LEFT" relativePoint="RIGHT" relativeTo="Atr_Buy_Chain_CB">
-									<Offset><AbsDimension x="4" y="1"/></Offset>
-								</Anchor>
-							</Anchors>
-						</FontString>
-					</Layer>
-				</Layers>
-				<Scripts>
-					<OnClick>Atr_Buy_Chain_CB_OnClick();</OnClick>
-				</Scripts>
-			</CheckButton>
 
 			<Button name="Atr_Buy_Confirm_OKBut" inherits="UIPanelButtonTemplate" text="Buy">
 				<Size><AbsDimension x="80" y="22"/></Size>
@@ -1375,12 +1426,12 @@
    <!-- Buy Confirmation screen --> 
 
 	<Frame name="Atr_Adv_Search_Dialog" inherits="AuctionatorDialog" toplevel="true" parent="UIParent" frameStrata="FULLSCREEN_DIALOG" enableMouse="true" hidden="true">
-		<Size><AbsDimension x="480" y="320" /></Size>		
+		<Size><AbsDimension x="480" y="390" /></Size>
 		<Anchors><Anchor point="TOPLEFT"><Offset><AbsDimension x="270" y="-160"/></Offset></Anchor></Anchors>
 
 		<Layers>
 			<Layer level="ARTWORK">
-			
+
 				<Texture file="Interface\DialogFrame\UI-DialogBox-Header">
 					<Size x="310" y="64"/>
 					<Anchors><Anchor point="TOP"><Offset x="0" y="12"/></Anchor></Anchors>
@@ -1393,23 +1444,31 @@
 				<FontString name="Atr_AS_Searchtext_Label" inherits="GameFontNormalSmall" text="Search For">
 					<Anchors><Anchor point="TOPLEFT"><Offset><AbsDimension x="40" y="-50"/></Offset></Anchor></Anchors>
 				</FontString>
-				
+
 				<FontString name="Atr_AS_Cat_Label" inherits="GameFontNormalSmall" text="Category">
-					<Anchors><Anchor point="TOPLEFT"><Offset><AbsDimension x="40" y="-120"/></Offset></Anchor></Anchors>
+					<Anchors><Anchor point="TOPLEFT"><Offset><AbsDimension x="40" y="-110"/></Offset></Anchor></Anchors>
 				</FontString>
-				
+
 				<FontString name="Atr_AS_SubCat_Label" inherits="GameFontNormalSmall" text="Subcategory">
-					<Anchors><Anchor point="TOPLEFT"><Offset><AbsDimension x="240" y="-120"/></Offset></Anchor></Anchors>
+					<Anchors><Anchor point="TOPLEFT"><Offset><AbsDimension x="240" y="-110"/></Offset></Anchor></Anchors>
 				</FontString>
-				
+
+				<FontString name="Atr_AS_Slot_Label" inherits="GameFontNormalSmall" text="Slot">
+					<Anchors><Anchor point="TOPLEFT"><Offset><AbsDimension x="40" y="-165"/></Offset></Anchor></Anchors>
+				</FontString>
+
+				<FontString name="Atr_AS_Rarity_Label" inherits="GameFontNormalSmall" text="Rarity">
+					<Anchors><Anchor point="TOPLEFT"><Offset><AbsDimension x="240" y="-165"/></Offset></Anchor></Anchors>
+				</FontString>
+
 				<FontString name="Atr_AS_LevRange_Label" inherits="GameFontNormalSmall" text="Level Range">
-					<Anchors><Anchor point="TOPLEFT"><Offset><AbsDimension x="40" y="-190"/></Offset></Anchor></Anchors>
+					<Anchors><Anchor point="TOPLEFT"><Offset><AbsDimension x="40" y="-225"/></Offset></Anchor></Anchors>
 				</FontString>
-				
-				<FontString name="Atr_AS_LevRange_Label" inherits="GameFontHighlightLarge" text="-">
+
+				<FontString name="Atr_AS_LevRange_Dash" inherits="GameFontHighlightLarge" text="-">
 					<Anchors><Anchor point="TOPLEFT" relativeTo="Atr_AS_LevRange_Label" relativePoint="BOTTOMLEFT"><Offset><AbsDimension x="41" y="-6"/></Offset></Anchor></Anchors>
 				</FontString>
-				
+
 			</Layer>
 		</Layers>
 
@@ -1418,6 +1477,18 @@
 			<EditBox name="Atr_AS_Searchtext" autoFocus="false" inherits="InputBoxTemplate">
 				<Size><AbsDimension x="240" y="20"/></Size>
 				<Anchors><Anchor point="TOPLEFT" relativeTo="Atr_AS_Searchtext_Label" relativePoint="BOTTOMLEFT"><Offset><AbsDimension x="2" y="-4"/></Offset></Anchor></Anchors>
+				<Frames>
+					<Button name="Atr_AS_Searchtext_ClearBut" inherits="UIPanelCloseButton">
+						<Size><AbsDimension x="20" y="20"/></Size>
+						<Anchors><Anchor point="RIGHT"><Offset><AbsDimension x="4" y="0"/></Offset></Anchor></Anchors>
+						<Scripts>
+							<OnClick>
+								Atr_AS_Searchtext:SetText("");
+								Atr_AS_Searchtext:SetFocus();
+							</OnClick>
+						</Scripts>
+					</Button>
+				</Frames>
 			</EditBox>
 
 			<Frame name="Atr_ASDD_Class" inherits="UIDropDownMenuTemplate">
@@ -1431,6 +1502,20 @@
 				<Anchors><Anchor point="TOPLEFT" relativeTo="Atr_AS_SubCat_Label" relativePoint="BOTTOMLEFT"><Offset><AbsDimension x="-20" y="-4"/></Offset></Anchor></Anchors>
 				<Scripts>
 					<OnShow> Atr_ASDD_Subclass_OnLoad(self); </OnShow>
+				</Scripts>
+			</Frame>
+
+			<Frame name="Atr_ASDD_Invtype" inherits="UIDropDownMenuTemplate">
+				<Anchors><Anchor point="TOPLEFT" relativeTo="Atr_AS_Slot_Label" relativePoint="BOTTOMLEFT"><Offset><AbsDimension x="-20" y="-4"/></Offset></Anchor></Anchors>
+				<Scripts>
+					<OnShow> Atr_ASDD_Invtype_OnLoad(self); </OnShow>
+				</Scripts>
+			</Frame>
+
+			<Frame name="Atr_ASDD_Quality" inherits="UIDropDownMenuTemplate">
+				<Anchors><Anchor point="TOPLEFT" relativeTo="Atr_AS_Rarity_Label" relativePoint="BOTTOMLEFT"><Offset><AbsDimension x="-20" y="-4"/></Offset></Anchor></Anchors>
+				<Scripts>
+					<OnShow> Atr_ASDD_Quality_OnLoad(self); </OnShow>
 				</Scripts>
 			</Frame>
 
@@ -1454,9 +1539,6 @@
 						Atr_Adv_Search_Reset();
 					</OnClick>
 				</Scripts>
-				<NormalFont style="GameFontNormalSmall"/>
-				<HighlightFont style="GameFontHighlightSmall"/>
-				<DisabledFont style="GameFontDisableSmall"/>
 			</Button>
 
 			<Button name="Atr_Adv_Search_CancelBut" inherits="UIPanelButtonTemplate" text="CANCEL">
