@@ -1,0 +1,29 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.blizzard.com/wow/ui/">
+
+    <!--
+        Madicinal +Mod 1.0
+        Static declaration deliberately avoids relying on late runtime frame creation.
+        AuctionatorBuyMultiple.lua controls visibility/enabled state and all purchasing
+        continues through AuctionatorBuy.lua's CoA Ascension buy engine.
+    -->
+    <Button name="Atr_BuyMultiple_Button" parent="AuctionFrame" inherits="UIPanelButtonTemplate" text="Buy Multiple" hidden="true" frameStrata="HIGH">
+        <Size>
+            <AbsDimension x="105" y="22"/>
+        </Size>
+        <Anchors>
+            <Anchor point="RIGHT" relativeTo="Atr_Buy1_Button" relativePoint="LEFT">
+                <Offset>
+                    <AbsDimension x="-8" y="0"/>
+                </Offset>
+            </Anchor>
+        </Anchors>
+        <Scripts>
+            <OnClick>
+                if (Atr_Buy_Multiple_Start) then Atr_Buy_Multiple_Start(); end
+            </OnClick>
+        </Scripts>
+    </Button>
+
+</Ui>
