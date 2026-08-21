@@ -1,5 +1,7 @@
--- CoAuctionator +Mod 1.8
--- Classic/original Auctionator presentation layer with strict tab isolation.
+-- CoAuctionator +Mod 1.9
+-- Classic/original Auctionator presentation layer with strict tab ownership.
+-- Buy/Sell/More use the original Auctionator shell. Inventory is a standalone
+-- custom workspace rendered over Blizzard's neutral Bids-style Auction House art.
 
 local textureBase = "Interface\\AddOns\\CoAuctionator\\Images\\";
 local classicAdvancedButton = nil;
@@ -30,6 +32,16 @@ local function IsBuyTab ()
     return Atr_IsModeBuy and Atr_IsModeBuy() and true or false;
 end
 
+local function IsInventoryTab ()
+    if (not Atr_FindTabIndex or not PanelTemplates_GetSelectedTab or not AuctionFrame) then
+        return false;
+    end
+
+    local inventoryIndex = Atr_FindTabIndex (4); -- INVENTORY_TAB in Auctionator.lua
+    local selectedIndex = PanelTemplates_GetSelectedTab (AuctionFrame);
+    return inventoryIndex and inventoryIndex > 0 and selectedIndex == inventoryIndex;
+end
+
 local function HideLegacyBackdropIfPresent ()
     local oldBackdrop = _G["CoAtr_ClassicBackdrop"];
     if (oldBackdrop) then oldBackdrop:Hide(); end
@@ -41,34 +53,66 @@ local function HideBuyOnlyControls ()
     if (Atr_Exact_Search_Button) then Atr_Exact_Search_Button:Hide(); end
 end
 
-local function ShowClassicAuctionArt ()
+local function SetAuctionArt (prefix)
     if (not AuctionFrame) then return; end
 
-    HideLegacyBackdropIfPresent();
-
     local art = {
-        {AuctionFrameTopLeft,  "atr_topleft"},
-        {AuctionFrameTop,      "atr_top"},
-        {AuctionFrameTopRight, "atr_topright"},
-        {AuctionFrameBotLeft,  "atr_botleft"},
-        {AuctionFrameBot,      "atr_bot"},
-        {AuctionFrameBotRight, "atr_botright"},
+        {AuctionFrameTopLeft,  prefix.."TopLeft"},
+        {AuctionFrameTop,      prefix.."Top"},
+        {AuctionFrameTopRight, prefix.."TopRight"},
+        {AuctionFrameBotLeft,  prefix.."BotLeft"},
+        {AuctionFrameBot,      prefix.."Bot"},
+        {AuctionFrameBotRight, prefix.."BotRight"},
     };
 
     local i;
     for i = 1, #art do
         local texture = art[i][1];
         if (texture) then
-            texture:SetTexture (textureBase..art[i][2]);
+            texture:SetTexture (art[i][2]);
             texture:SetAlpha (1);
             texture:Show();
         end
     end
+end
+
+local function ShowClassicAuctionArt ()
+    HideLegacyBackdropIfPresent();
+
+    if (AuctionFrameTopLeft)  then AuctionFrameTopLeft:SetTexture  (textureBase.."atr_topleft");  AuctionFrameTopLeft:Show();  end
+    if (AuctionFrameTop)      then AuctionFrameTop:SetTexture      (textureBase.."atr_top");      AuctionFrameTop:Show();      end
+    if (AuctionFrameTopRight) then AuctionFrameTopRight:SetTexture (textureBase.."atr_topright"); AuctionFrameTopRight:Show(); end
+    if (AuctionFrameBotLeft)  then AuctionFrameBotLeft:SetTexture  (textureBase.."atr_botleft");  AuctionFrameBotLeft:Show();  end
+    if (AuctionFrameBot)      then AuctionFrameBot:SetTexture      (textureBase.."atr_bot");      AuctionFrameBot:Show();      end
+    if (AuctionFrameBotRight) then AuctionFrameBotRight:SetTexture (textureBase.."atr_botright"); AuctionFrameBotRight:Show(); end
 
     ClearPanelBackdrop (Atr_Panel_Sell);
     ClearPanelBackdrop (Atr_Panel_Buy);
     ClearPanelBackdrop (Atr_Panel_More);
     ClearPanelBackdrop (Atr_Panel_Inventory);
+end
+
+local function ShowInventoryBidArt ()
+    HideLegacyBackdropIfPresent();
+    HideBuyOnlyControls();
+
+    -- These are the exact textures Blizzard's 3.3.5 AuctionFrame uses for Bids.
+    -- We use only the six frame tiles; AuctionFrameBid itself stays hidden, so its
+    -- headers, bid inputs and buttons never appear on the Inventory tab.
+    SetAuctionArt ("Interface\\AuctionFrame\\UI-AuctionFrame-Bid-");
+
+    if (AuctionFrameBid) then AuctionFrameBid:Hide(); end
+    if (AuctionFrameBrowse) then AuctionFrameBrowse:Hide(); end
+    if (AuctionFrameAuctions) then AuctionFrameAuctions:Hide(); end
+
+    ClearPanelBackdrop (Atr_Panel_Inventory);
+    if (Atr_Panel_Inventory) then Atr_Panel_Inventory:Hide(); end
+
+    -- Critical ownership boundary: the CoA tab handler normally re-shows the
+    -- shared Buy/Sell Atr_Main_Panel even after Atr_Inventory_Show().  That is the
+    -- overlapping shell visible in +Mod 1.8. Inventory does not use it at all.
+    if (Atr_Main_Panel) then Atr_Main_Panel:Hide(); end
+    if (Atr_BagPanel) then Atr_BagPanel:Hide(); end
 end
 
 local function EnsureClassicAdvancedButton ()
@@ -113,16 +157,13 @@ end
 
 local function ApplyLegacyGeometry ()
     local _, _, isCustom = SelectedTabInfo();
-    if (not isCustom) then
+    if (not isCustom or IsInventoryTab()) then
         HideBuyOnlyControls();
         return;
     end
 
     ApplyCommonCustomGeometry();
 
-    -- Advanced search and Exact Match belong ONLY to the Buy tab.  Previous
-    -- versions applied this block to every custom tab while another module hid
-    -- the controls again, causing visible show/hide flicker several times/sec.
     if (not IsBuyTab()) then
         HideBuyOnlyControls();
         return;
@@ -148,8 +189,6 @@ local function ApplyLegacyGeometry ()
         if (Atr_Adv_Search_Button and Atr_Adv_Search_Button:IsEnabled()) then adv:Enable(); else adv:Disable(); end
     end
 
-    -- The upstream Advanced checkbox remains hidden; the compact + button is the
-    -- classic-shell presentation for the same dialog.
     if (Atr_Adv_Search_Button) then Atr_Adv_Search_Button:Hide(); end
 
     if (Atr_Exact_Search_Button and adv) then
@@ -176,8 +215,7 @@ local function IsolateBlizzardTab ()
     end
 end
 
--- The classic shell uses the six original Auctionator art tiles, so the CoA
--- panel system must not hide them on custom tabs.
+-- Buy/Sell/More classic shell needs these six art tiles to remain visible.
 function Atr_HideAHArt ()
 end
 
@@ -196,12 +234,22 @@ end
 
 local function ApplyForSelectedTab ()
     local _, _, isCustom = SelectedTabInfo();
-    if (isCustom) then
-        ShowClassicAuctionArt();
-        ApplyLegacyGeometry();
-    else
+
+    if (not isCustom) then
         IsolateBlizzardTab();
+        return;
     end
+
+    if (IsInventoryTab()) then
+        ShowInventoryBidArt();
+        return;
+    end
+
+    -- Returning from Inventory: restore the shared Auctionator pane before
+    -- applying the classic Buy/Sell/More shell.
+    if (Atr_Main_Panel) then Atr_Main_Panel:Show(); end
+    ShowClassicAuctionArt();
+    ApplyLegacyGeometry();
 end
 
 local controller = CreateFrame ("Frame");
@@ -215,8 +263,8 @@ controller:SetScript ("OnEvent", function (self, eventName)
     end
 end);
 
--- Reassert presentation after delayed skin updates, but every pass is now
--- tab-aware: Buy-only controls are never shown outside Buy.
+-- Reassert after delayed skin updates. Every pass is ownership-aware, so this no
+-- longer creates cross-tab control flicker.
 controller:SetScript ("OnUpdate", function (self, elapsed)
     elapsedSinceApply = elapsedSinceApply + elapsed;
     if (elapsedSinceApply < 0.20) then return; end
