@@ -1,11 +1,11 @@
 ## Interface: 30300
 ## Title: CoAuctionator
-## Version: 2.9.9 (+Mod 1.11)
+## Version: 2.9.9 (+Mod 1.12)
 ## Author: Zirco; CoA fork by Sleepywalker69; Madicinal mod
 ## Dependencies: CoAuctionator_Pricing_History, CoAuctionator_Price_Database
 ## X-Website: https://github.com/Madicinal/Auctionator
 ## X-Localizations: enUS, deDE, ruRU, svSE, frFR, esES
-## Notes: CoA Ascension Auctionator fork with individual Buy Multiple picker, classic Auctionator Buy/Sell shell, and expanded Bids-style Inventory workspace
+## Notes: CoA Ascension Auctionator fork with individual Buy Multiple picker, classic Auctionator Buy/Sell shell, and refined Bids-style Inventory workspace
 ## SavedVariablesPerCharacter: AUCTIONATOR_SHOW_ST_PRICE, AUCTIONATOR_ENABLE_ALT, AUCTIONATOR_OPEN_FIRST, AUCTIONATOR_OPEN_BUY, AUCTIONATOR_OPEN_ALL_BAGS, AUCTIONATOR_DEF_DURATION, AUCTIONATOR_SHOW_TIPS, AUCTIONATOR_V_TIPS, AUCTIONATOR_A_TIPS, AUCTIONATOR_D_TIPS, AUCTIONATOR_SHIFT_TIPS, AUCTIONATOR_DE_DETAILS_TIPS, AUCTIONATOR_DEFTAB, AUCTIONATOR_ROMOVE_BLOOFORGED, AUCTIONATOR_ROMOVE_SUFFIX
 
 ## SavedVariables: AUCTIONATOR_SAVEDVARS, AUCTIONATOR_SHOPPING_LISTS, AUCTIONATOR_LAST_SCAN_TIME, AUCTIONATOR_TOONS, AUCTIONATOR_STACKING_PREFS, AUCTIONATOR_SCAN_MINLEVEL, AUCTIONATOR_FS_CHUNK, AUCTIONATOR_DB_MAXITEM_AGE, AUCTIONATOR_DB_MAXHIST_AGE, AUCTIONATOR_DB_MAXHIST_DAYS, ITEM_ID_VERSION, AUCTIONATOR_HIDE_BIDONLY, AUCTIONATOR_CHAIN_BUY, AUCTIONATOR_MATCH_RARITY
