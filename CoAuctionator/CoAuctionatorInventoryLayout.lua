@@ -1,15 +1,17 @@
--- CoAuctionator +Mod 1.8
--- Compact Inventory-tab presentation layer.
+-- CoAuctionator +Mod 1.9
+-- Inventory-specific UI shell.
 --
--- Keep AuctionatorInventory.lua as the functional source.  This module only
--- gives that custom feature a Bids-like inset workspace: two clear upper panes
--- and one lower posting/queue pane, scaled slightly to sit comfortably inside
--- the normal Auction House content area.
+-- Inventory is intentionally NOT drawn on Atr_Main_Panel. CoAuctionatorClassicSkin
+-- gives this tab Blizzard's neutral Bids artwork; this file arranges the existing
+-- Inventory controls inside that blank canvas without changing posting logic.
 
 local built = false;
 local inventoryPanel;
 local marketPanel;
 local postingPanel;
+local inventoryTitle;
+local inventoryOptionsButton;
+local inventoryFullScanButton;
 
 local function MakePanel (parent, name, x, y, width, height)
     local panel = CreateFrame ("Frame", name, parent);
@@ -23,19 +25,17 @@ local function MakePanel (parent, name, x, y, width, height)
         edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
         tile = true,
         tileSize = 16,
-        edgeSize = 12,
+        edgeSize = 10,
         insets = { left = 3, right = 3, top = 3, bottom = 3 }
     });
-    panel:SetBackdropColor (0.02, 0.02, 0.02, 0.62);
-    panel:SetBackdropBorderColor (0.52, 0.46, 0.27, 0.90);
+    panel:SetBackdropColor (0.01, 0.01, 0.01, 0.42);
+    panel:SetBackdropBorderColor (0.48, 0.42, 0.24, 0.72);
     return panel;
 end
 
 local function MakeCaption (panel, text)
     local caption = panel:CreateFontString (nil, "ARTWORK", "GameFontNormalSmall");
-    -- Sit on the upper edge like Blizzard inset-frame labels instead of taking a
-    -- full extra row inside the content area.
-    caption:SetPoint ("BOTTOMLEFT", panel, "TOPLEFT", 8, -1);
+    caption:SetPoint ("TOPLEFT", panel, "TOPLEFT", 8, -6);
     caption:SetText (text);
     return caption;
 end
@@ -48,27 +48,108 @@ local function MoveButton (button, anchor, point, relPoint, x, y, width, height)
     if (height) then button:SetHeight (height); end
 end
 
+local function HideLegacyInventoryDecorations (frame)
+    -- AuctionatorInventory.lua predates this shell and creates an explanatory
+    -- paragraph plus a 1px center divider. They are redundant once the tab has
+    -- explicit sections, and are the main source of the visual collisions seen
+    -- in +Mod 1.8.
+    local regions = {frame:GetRegions()};
+    local i;
+    for i = 1, #regions do
+        local region = regions[i];
+        if (region and region.GetText) then
+            local text = region:GetText();
+            if (type(text) == "string" and string.find(text, "Auctionable inventory sorted", 1, true) == 1) then
+                region:Hide();
+            end
+        elseif (region and region.GetWidth and region.GetHeight) then
+            local w = region:GetWidth();
+            local h = region:GetHeight();
+            if (w and h and w <= 2 and h >= 200 and h <= 240) then
+                region:Hide();
+            end
+        end
+    end
+end
+
+local function EnsureInventoryHeader ()
+    if (inventoryTitle or not AuctionFrame) then return; end
+
+    inventoryTitle = AuctionFrame:CreateFontString ("CoAtr_InventoryTitle", "OVERLAY", "GameFontNormal");
+    inventoryTitle:SetPoint ("TOP", AuctionFrame, "TOP", 0, -17);
+    inventoryTitle:SetText ("Auctionator - Inventory Value");
+
+    inventoryOptionsButton = CreateFrame ("Button", "CoAtr_InventoryOptionsButton", AuctionFrame, "UIPanelButtonTemplate");
+    inventoryOptionsButton:SetWidth (72);
+    inventoryOptionsButton:SetHeight (20);
+    inventoryOptionsButton:SetPoint ("TOPRIGHT", AuctionFrame, "TOPRIGHT", -18, -42);
+    inventoryOptionsButton:SetText ("Options");
+    inventoryOptionsButton:SetScript ("OnClick", function ()
+        if (Auctionator1Button and Auctionator1Button.GetScript) then
+            local click = Auctionator1Button:GetScript ("OnClick");
+            if (click) then click (Auctionator1Button); return; end
+        end
+        if (InterfaceOptionsFrame_OpenToCategory) then
+            InterfaceOptionsFrame_OpenToCategory ("Auctionator");
+        end
+    end);
+
+    inventoryFullScanButton = CreateFrame ("Button", "CoAtr_InventoryFullScanButton", AuctionFrame, "UIPanelButtonTemplate");
+    inventoryFullScanButton:SetWidth (82);
+    inventoryFullScanButton:SetHeight (20);
+    inventoryFullScanButton:SetPoint ("RIGHT", inventoryOptionsButton, "LEFT", -8, 0);
+    inventoryFullScanButton:SetText ("Full Scan...");
+    inventoryFullScanButton:SetScript ("OnClick", function ()
+        if (Atr_ShowFullScanFrame) then Atr_ShowFullScanFrame(); end
+    end);
+
+    inventoryTitle:Hide();
+    inventoryOptionsButton:Hide();
+    inventoryFullScanButton:Hide();
+end
+
+local function ShowInventoryHeader (show)
+    EnsureInventoryHeader();
+
+    if (show) then
+        if (inventoryTitle) then inventoryTitle:Show(); end
+        if (inventoryOptionsButton) then inventoryOptionsButton:Show(); end
+        if (inventoryFullScanButton) then inventoryFullScanButton:Show(); end
+    else
+        if (inventoryTitle) then inventoryTitle:Hide(); end
+        if (inventoryOptionsButton) then inventoryOptionsButton:Hide(); end
+        if (inventoryFullScanButton) then inventoryFullScanButton:Hide(); end
+    end
+end
+
 local function ApplyLayout ()
     local frame = Atr_InventoryFrame;
     if (not frame or not built) then return; end
 
-    -- The stock Bids pane leaves a margin around its content.  Inventory is a
-    -- custom 744x374 workspace, so reduce it slightly and center it in that same
-    -- visual area instead of letting it ride against every edge of AuctionFrame.
-    frame:SetScale (0.92);
+    -- Bids uses most of the AH's interior but leaves a comfortable stone border.
+    -- Scale the 744x374 Inventory workspace to ~670x337 and center it there.
+    frame:SetScale (0.90);
     frame:ClearAllPoints();
-    frame:SetPoint ("TOPLEFT", AuctionFrame, "TOPLEFT", 45, -67);
+    frame:SetPoint ("TOPLEFT", AuctionFrame, "TOPLEFT", 82, -67);
+
+    HideLegacyInventoryDecorations (frame);
+    ShowInventoryHeader (true);
 
     inventoryPanel:Show();
     marketPanel:Show();
     postingPanel:Show();
 
-    -- Existing column headings/rows were already internally aligned well.  Keep
-    -- those coordinates and place the section boundaries around them rather than
-    -- fighting the Inventory engine's row geometry.
+    -- Keep all three utility buttons inside the Inventory Items header instead of
+    -- letting them straddle both upper sections.
+    MoveButton (frame.refreshButton,   inventoryPanel, "TOPLEFT", "TOPLEFT", 176, -4, 68, 22);
+    MoveButton (frame.selectAllButton, inventoryPanel, "TOPLEFT", "TOPLEFT", 248, -4, 72, 22);
+    MoveButton (frame.clearButton,     inventoryPanel, "TOPLEFT", "TOPLEFT", 324, -4, 58, 22);
+
+    -- The Inventory engine updates marketTitle dynamically with the active item,
+    -- so reuse it as the right-pane caption instead of drawing a second title.
     if (frame.marketTitle) then
         frame.marketTitle:ClearAllPoints();
-        frame.marketTitle:SetPoint ("BOTTOMLEFT", marketPanel, "TOPLEFT", 8, -1);
+        frame.marketTitle:SetPoint ("TOPLEFT", marketPanel, "TOPLEFT", 8, -6);
         frame.marketTitle:SetWidth (324);
         frame.marketTitle:SetHeight (16);
         frame.marketTitle:Show();
@@ -88,39 +169,52 @@ local function ApplyLayout ()
         frame.marketHint:SetHeight (18);
     end
 
-    -- One lower region owns both state and posting actions.  This is deliberately
-    -- simpler than +Mod 1.7's five-box design and reads more like Blizzard's
-    -- auction panes.
+    -- One lower inset owns state, price/stack inputs and queue actions. The input
+    -- boxes themselves keep their proven AuctionatorInventory.lua coordinates;
+    -- only the status and action row are normalized around them.
     if (frame.queueStatus) then
         frame.queueStatus:ClearAllPoints();
-        frame.queueStatus:SetPoint ("TOPLEFT", postingPanel, "TOPLEFT", 8, -8);
-        frame.queueStatus:SetWidth (360);
-        frame.queueStatus:SetHeight (28);
+        frame.queueStatus:SetPoint ("TOPLEFT", postingPanel, "TOPLEFT", 8, -19);
+        frame.queueStatus:SetWidth (355);
+        frame.queueStatus:SetHeight (24);
         frame.queueStatus:SetJustifyV ("MIDDLE");
     end
 
     if (frame.buyoutTotal) then
         frame.buyoutTotal:ClearAllPoints();
-        frame.buyoutTotal:SetPoint ("TOPLEFT", postingPanel, "TOPLEFT", 382, -7);
+        frame.buyoutTotal:SetPoint ("TOPLEFT", postingPanel, "TOPLEFT", 382, -18);
         frame.buyoutTotal:SetWidth (348);
         frame.buyoutTotal:SetHeight (13);
     end
 
     if (frame.planSummary) then
         frame.planSummary:ClearAllPoints();
-        frame.planSummary:SetPoint ("TOPLEFT", postingPanel, "TOPLEFT", 382, -21);
+        frame.planSummary:SetPoint ("TOPLEFT", postingPanel, "TOPLEFT", 382, -32);
         frame.planSummary:SetWidth (348);
         frame.planSummary:SetHeight (13);
     end
 
-    -- Duration remains part of the posting parameters, not a separate queue box.
-    MoveButton (frame.durationButton, postingPanel, "TOPRIGHT", "TOPRIGHT", -8, -35, 120, 22);
+    MoveButton (frame.durationButton, postingPanel, "TOPRIGHT", "TOPRIGHT", -8, -43, 120, 22);
 
-    -- Four actions form a single horizontal Blizzard-style action row.
     MoveButton (frame.startButton, postingPanel, "BOTTOMLEFT", "BOTTOMLEFT", 8, 7, 88, 22);
-    MoveButton (frame.postButton,  postingPanel, "LEFT", "RIGHT", 6, 0, 88, 22);
-    MoveButton (frame.skipButton,  postingPanel, "LEFT", "RIGHT", 6, 0, 78, 22);
-    MoveButton (frame.stopButton,  postingPanel, "LEFT", "RIGHT", 6, 0, 58, 22);
+    if (frame.postButton) then
+        frame.postButton:ClearAllPoints();
+        frame.postButton:SetPoint ("LEFT", frame.startButton, "RIGHT", 6, 0);
+        frame.postButton:SetWidth (88);
+        frame.postButton:SetHeight (22);
+    end
+    if (frame.skipButton) then
+        frame.skipButton:ClearAllPoints();
+        frame.skipButton:SetPoint ("LEFT", frame.postButton, "RIGHT", 6, 0);
+        frame.skipButton:SetWidth (78);
+        frame.skipButton:SetHeight (22);
+    end
+    if (frame.stopButton) then
+        frame.stopButton:ClearAllPoints();
+        frame.stopButton:SetPoint ("LEFT", frame.skipButton, "RIGHT", 6, 0);
+        frame.stopButton:SetWidth (58);
+        frame.stopButton:SetHeight (22);
+    end
 end
 
 local function BuildLayout ()
@@ -128,12 +222,11 @@ local function BuildLayout ()
 
     local frame = Atr_InventoryFrame;
 
-    -- Match the existing row geometry: inventory occupies x=0..390, market
-    -- x=398..740, and the posting controls already live in the last ~95px high
-    -- band.  These three insets therefore segment without covering useful rows.
-    inventoryPanel = MakePanel (frame, "CoAtr_InventoryItemsPanel", 0, -35, 390, 232);
-    marketPanel    = MakePanel (frame, "CoAtr_InventoryMarketPanel", 398, -35, 342, 232);
-    postingPanel   = MakePanel (frame, "CoAtr_InventoryPostingPanel", 0, -278, 740, 94);
+    -- Existing rows occupy approximately x=0..390 and x=398..740. Keep those
+    -- proven dimensions and give each area a restrained Bids-like inset.
+    inventoryPanel = MakePanel (frame, "CoAtr_InventoryItemsPanel", 0, -18, 390, 240);
+    marketPanel    = MakePanel (frame, "CoAtr_InventoryMarketPanel", 398, -18, 342, 240);
+    postingPanel   = MakePanel (frame, "CoAtr_InventoryPostingPanel", 0, -268, 740, 104);
 
     MakeCaption (inventoryPanel, "Inventory Items");
     MakeCaption (postingPanel, "Posting Queue");
@@ -145,6 +238,9 @@ local function BuildLayout ()
         frame.coAtrInventoryLayoutHooked = true;
         frame:HookScript ("OnShow", function ()
             ApplyLayout();
+        end);
+        frame:HookScript ("OnHide", function ()
+            ShowInventoryHeader (false);
         end);
     end
 end
