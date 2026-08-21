@@ -92,3 +92,11 @@ Changes below are additions made after the Sleepywalker69 CoA fork base:
 - **Classic Auctionator UI shell** — restores the preserved pre-fork Auctionator frame artwork and legacy search-row geometry over the newer CoA functionality, including the original compact `+` Advanced Search button, while retaining CoA-only controls such as Exact Match, Chain Buy, and the newer scanning/inventory systems.
 
 Legacy pre-migration code is preserved in the `legacy-ascension-multidirect` branch.
+
+
+<img width="2328" height="728" alt="image" src="https://github.com/user-attachments/assets/71d92c3c-defe-4695-8c02-f2c5c9d5c09c" />
+<img width="1578" height="732" alt="image" src="https://github.com/user-attachments/assets/ddd49e65-4100-4961-8cd7-54750fb276e7" />
+<img width="1306" height="723" alt="image" src="https://github.com/user-attachments/assets/7fe70446-e4cd-4a88-a89c-f58d0e234894" />
+
+
+
