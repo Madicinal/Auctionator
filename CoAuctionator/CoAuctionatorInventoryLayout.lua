@@ -1,4 +1,4 @@
--- CoAuctionator +Mod 1.10
+-- CoAuctionator +Mod 1.11
 -- Inventory-specific UI shell.
 --
 -- Inventory is intentionally NOT drawn on Atr_Main_Panel. CoAuctionatorClassicSkin
@@ -71,6 +71,16 @@ local function HideLegacyInventoryDecorations (frame)
     end
 end
 
+local function InventoryTabSelected ()
+    if (not AuctionFrame or not PanelTemplates_GetSelectedTab or not Atr_FindTabIndex) then
+        return false;
+    end
+
+    local inventoryIndex = Atr_FindTabIndex (4); -- INVENTORY_TAB in Auctionator.lua
+    local selectedIndex = PanelTemplates_GetSelectedTab (AuctionFrame);
+    return inventoryIndex and inventoryIndex > 0 and selectedIndex == inventoryIndex;
+end
+
 local function EnsureInventoryHeader ()
     if (inventoryTitle or not AuctionFrame) then return; end
 
@@ -135,7 +145,12 @@ local function ApplyLayout ()
     frame:SetPoint ("TOPLEFT", AuctionFrame, "TOPLEFT", 30, -60);
 
     HideLegacyInventoryDecorations (frame);
-    ShowInventoryHeader (true);
+
+    -- Critical startup guard: BuildLayout runs once as soon as the Inventory
+    -- frame exists, even when Browse/Bids/Auctions is currently selected.  The
+    -- header is parented to AuctionFrame rather than Atr_InventoryFrame, so it
+    -- must only be shown when Inventory itself is both selected and visible.
+    ShowInventoryHeader (frame:IsShown() and InventoryTabSelected());
 
     inventoryPanel:Show();
     marketPanel:Show();
