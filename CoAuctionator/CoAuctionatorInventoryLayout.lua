@@ -1,17 +1,15 @@
--- CoAuctionator +Mod 1.7
--- Inventory-tab presentation layer.
+-- CoAuctionator +Mod 1.8
+-- Compact Inventory-tab presentation layer.
 --
--- The Inventory feature is intentionally more complex than the original 2.9.9
--- Buy/Sell panes, so give its existing controls clear visual ownership instead
--- of forcing them into the old Auctionator list layout.  This file changes only
--- presentation/anchors; AuctionatorInventory.lua remains the functional source.
+-- Keep AuctionatorInventory.lua as the functional source.  This module only
+-- gives that custom feature a Bids-like inset workspace: two clear upper panes
+-- and one lower posting/queue pane, scaled slightly to sit comfortably inside
+-- the normal Auction House content area.
 
 local built = false;
 local inventoryPanel;
 local marketPanel;
-local statusBar;
 local postingPanel;
-local queuePanel;
 
 local function MakePanel (parent, name, x, y, width, height)
     local panel = CreateFrame ("Frame", name, parent);
@@ -28,14 +26,16 @@ local function MakePanel (parent, name, x, y, width, height)
         edgeSize = 12,
         insets = { left = 3, right = 3, top = 3, bottom = 3 }
     });
-    panel:SetBackdropColor (0.03, 0.03, 0.03, 0.78);
-    panel:SetBackdropBorderColor (0.55, 0.48, 0.28, 0.95);
+    panel:SetBackdropColor (0.02, 0.02, 0.02, 0.62);
+    panel:SetBackdropBorderColor (0.52, 0.46, 0.27, 0.90);
     return panel;
 end
 
 local function MakeCaption (panel, text)
     local caption = panel:CreateFontString (nil, "ARTWORK", "GameFontNormalSmall");
-    caption:SetPoint ("TOPLEFT", panel, "TOPLEFT", 8, 9);
+    -- Sit on the upper edge like Blizzard inset-frame labels instead of taking a
+    -- full extra row inside the content area.
+    caption:SetPoint ("BOTTOMLEFT", panel, "TOPLEFT", 8, -1);
     caption:SetText (text);
     return caption;
 end
@@ -52,67 +52,75 @@ local function ApplyLayout ()
     local frame = Atr_InventoryFrame;
     if (not frame or not built) then return; end
 
-    -- Top half: two clearly separated information regions.
+    -- The stock Bids pane leaves a margin around its content.  Inventory is a
+    -- custom 744x374 workspace, so reduce it slightly and center it in that same
+    -- visual area instead of letting it ride against every edge of AuctionFrame.
+    frame:SetScale (0.92);
+    frame:ClearAllPoints();
+    frame:SetPoint ("TOPLEFT", AuctionFrame, "TOPLEFT", 45, -67);
+
     inventoryPanel:Show();
     marketPanel:Show();
-    statusBar:Show();
     postingPanel:Show();
-    queuePanel:Show();
 
+    -- Existing column headings/rows were already internally aligned well.  Keep
+    -- those coordinates and place the section boundaries around them rather than
+    -- fighting the Inventory engine's row geometry.
     if (frame.marketTitle) then
-        -- The bordered region and its caption replace the old floating title.
-        frame.marketTitle:Hide();
+        frame.marketTitle:ClearAllPoints();
+        frame.marketTitle:SetPoint ("BOTTOMLEFT", marketPanel, "TOPLEFT", 8, -1);
+        frame.marketTitle:SetWidth (324);
+        frame.marketTitle:SetHeight (16);
+        frame.marketTitle:Show();
     end
 
     if (frame.selectionSummary) then
         frame.selectionSummary:ClearAllPoints();
         frame.selectionSummary:SetPoint ("BOTTOMLEFT", inventoryPanel, "BOTTOMLEFT", 8, 7);
         frame.selectionSummary:SetWidth (372);
-        frame.selectionSummary:SetHeight (20);
+        frame.selectionSummary:SetHeight (18);
     end
 
     if (frame.marketHint) then
         frame.marketHint:ClearAllPoints();
         frame.marketHint:SetPoint ("BOTTOMLEFT", marketPanel, "BOTTOMLEFT", 8, 7);
         frame.marketHint:SetWidth (324);
-        frame.marketHint:SetHeight (20);
+        frame.marketHint:SetHeight (18);
     end
 
-    -- A single status strip separates choosing/reviewing from posting controls.
+    -- One lower region owns both state and posting actions.  This is deliberately
+    -- simpler than +Mod 1.7's five-box design and reads more like Blizzard's
+    -- auction panes.
     if (frame.queueStatus) then
         frame.queueStatus:ClearAllPoints();
-        frame.queueStatus:SetPoint ("TOPLEFT", statusBar, "TOPLEFT", 8, -4);
-        frame.queueStatus:SetWidth (365);
-        frame.queueStatus:SetHeight (22);
+        frame.queueStatus:SetPoint ("TOPLEFT", postingPanel, "TOPLEFT", 8, -8);
+        frame.queueStatus:SetWidth (360);
+        frame.queueStatus:SetHeight (28);
         frame.queueStatus:SetJustifyV ("MIDDLE");
     end
 
     if (frame.buyoutTotal) then
         frame.buyoutTotal:ClearAllPoints();
-        frame.buyoutTotal:SetPoint ("TOPLEFT", statusBar, "TOPLEFT", 384, -3);
-        frame.buyoutTotal:SetWidth (346);
+        frame.buyoutTotal:SetPoint ("TOPLEFT", postingPanel, "TOPLEFT", 382, -7);
+        frame.buyoutTotal:SetWidth (348);
         frame.buyoutTotal:SetHeight (13);
     end
 
     if (frame.planSummary) then
         frame.planSummary:ClearAllPoints();
-        frame.planSummary:SetPoint ("TOPLEFT", statusBar, "TOPLEFT", 384, -15);
-        frame.planSummary:SetWidth (346);
+        frame.planSummary:SetPoint ("TOPLEFT", postingPanel, "TOPLEFT", 382, -21);
+        frame.planSummary:SetWidth (348);
         frame.planSummary:SetHeight (13);
     end
 
-    -- Posting setup remains in the same logical left-to-right order, but the
-    -- duration control is brought inside the setup region rather than floating
-    -- into the queue area.
-    if (frame.durationButton) then
-        MoveButton (frame.durationButton, postingPanel, "BOTTOMRIGHT", "BOTTOMRIGHT", -8, 7, 120, 22);
-    end
+    -- Duration remains part of the posting parameters, not a separate queue box.
+    MoveButton (frame.durationButton, postingPanel, "TOPRIGHT", "TOPRIGHT", -8, -35, 120, 22);
 
-    -- Queue actions are now one compact 2x2 cluster with obvious ownership.
-    MoveButton (frame.startButton, queuePanel, "TOPLEFT", "TOPLEFT", 7, -18, 66, 22);
-    MoveButton (frame.postButton,  queuePanel, "TOPRIGHT", "TOPRIGHT", -7, -18, 66, 22);
-    MoveButton (frame.skipButton,  queuePanel, "BOTTOMLEFT", "BOTTOMLEFT", 7, 7, 66, 22);
-    MoveButton (frame.stopButton,  queuePanel, "BOTTOMRIGHT", "BOTTOMRIGHT", -7, 7, 66, 22);
+    -- Four actions form a single horizontal Blizzard-style action row.
+    MoveButton (frame.startButton, postingPanel, "BOTTOMLEFT", "BOTTOMLEFT", 8, 7, 88, 22);
+    MoveButton (frame.postButton,  postingPanel, "LEFT", "RIGHT", 6, 0, 88, 22);
+    MoveButton (frame.skipButton,  postingPanel, "LEFT", "RIGHT", 6, 0, 78, 22);
+    MoveButton (frame.stopButton,  postingPanel, "LEFT", "RIGHT", 6, 0, 58, 22);
 end
 
 local function BuildLayout ()
@@ -120,19 +128,15 @@ local function BuildLayout ()
 
     local frame = Atr_InventoryFrame;
 
-    -- The coordinates deliberately follow the existing Inventory data model:
-    -- item selection left, live market comparison right, state in the middle,
-    -- then posting inputs and queue actions along the bottom.
-    inventoryPanel = MakePanel (frame, "CoAtr_InventoryItemsPanel", 0, -30, 390, 236);
-    marketPanel    = MakePanel (frame, "CoAtr_InventoryMarketPanel", 398, -30, 342, 236);
-    statusBar      = MakePanel (frame, "CoAtr_InventoryStatusBar", 0, -272, 740, 30);
-    postingPanel   = MakePanel (frame, "CoAtr_InventoryPostingPanel", 0, -308, 580, 64);
-    queuePanel     = MakePanel (frame, "CoAtr_InventoryQueuePanel", 588, -308, 152, 64);
+    -- Match the existing row geometry: inventory occupies x=0..390, market
+    -- x=398..740, and the posting controls already live in the last ~95px high
+    -- band.  These three insets therefore segment without covering useful rows.
+    inventoryPanel = MakePanel (frame, "CoAtr_InventoryItemsPanel", 0, -35, 390, 232);
+    marketPanel    = MakePanel (frame, "CoAtr_InventoryMarketPanel", 398, -35, 342, 232);
+    postingPanel   = MakePanel (frame, "CoAtr_InventoryPostingPanel", 0, -278, 740, 94);
 
     MakeCaption (inventoryPanel, "Inventory Items");
-    MakeCaption (marketPanel, "Matching Auctions");
-    MakeCaption (postingPanel, "Posting Setup");
-    MakeCaption (queuePanel, "Queue Controls");
+    MakeCaption (postingPanel, "Posting Queue");
 
     built = true;
     ApplyLayout();
