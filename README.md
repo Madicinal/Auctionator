@@ -1,4 +1,5 @@
 All credits to this original fork: https://github.com/Sleepywalker69/Auctionator-CoA-Ascension
+My changes are notated toward the very bottom, all made with GPT. I'm not a programmer and it's possible that it may have bugs. Works fine so far for me.
 
 # CoAuctionator (3.3.5 fork) — Scanning & Selling Overhaul
 
@@ -86,7 +87,7 @@ Based on **Auctionator** by Zirco (and the Borjamacare v3.2.6 WoD branch). Scann
 
 ## Madicinal fork additions
 
-Changes below are additions made after the Sleepywalker69 CoA fork base:
+**Changes below are additions made after the Sleepywalker69 CoA fork base:**
 
 - **Independent `CoAuctionator` package identity** — the core addon and both companion data addons use the `CoAuctionator*` naming scheme so the Ascension launcher can manage its own `Auctionator` package without overwriting this fork.
 - **Individual Buy Multiple picker** — adds a separate **Buy Multiple** button for grouped auction results. It expands the selected group into individual live AH rows so the user can choose exactly which auction to purchase, while all protected purchasing, exact item/link/rarity validation, acknowledgement, stale-row handling, retries, and scan updates remain in the upstream CoA buy engine.
