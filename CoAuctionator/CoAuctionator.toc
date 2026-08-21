@@ -1,6 +1,6 @@
 ## Interface: 30300
 ## Title: CoAuctionator
-## Version: 2.9.9 (+Mod 1.5)
+## Version: 2.9.9 (+Mod 1.6)
 ## Author: Zirco; CoA fork by Sleepywalker69; Madicinal mod
 ## Dependencies: CoAuctionator_Pricing_History, CoAuctionator_Price_Database
 ## X-Website: https://github.com/Madicinal/Auctionator
