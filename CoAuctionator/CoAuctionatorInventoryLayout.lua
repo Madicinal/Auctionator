@@ -1,4 +1,4 @@
--- CoAuctionator +Mod 1.11
+-- CoAuctionator +Mod 1.12
 -- Inventory-specific UI shell.
 --
 -- Inventory is intentionally NOT drawn on Atr_Main_Panel. CoAuctionatorClassicSkin
@@ -40,12 +40,47 @@ local function MakeCaption (panel, text)
     return caption;
 end
 
+local function MoveObject (object, anchor, point, relPoint, x, y, width, height)
+    if (not object or not anchor) then return; end
+    object:ClearAllPoints();
+    object:SetPoint (point or "TOPLEFT", anchor, relPoint or "TOPLEFT", x or 0, y or 0);
+    if (width and object.SetWidth) then object:SetWidth (width); end
+    if (height and object.SetHeight) then object:SetHeight (height); end
+end
+
 local function MoveButton (button, anchor, point, relPoint, x, y, width, height)
-    if (not button or not anchor) then return; end
-    button:ClearAllPoints();
-    button:SetPoint (point or "TOPLEFT", anchor, relPoint or "TOPLEFT", x or 0, y or 0);
-    if (width) then button:SetWidth (width); end
-    if (height) then button:SetHeight (height); end
+    MoveObject (button, anchor, point, relPoint, x, y, width, height);
+end
+
+local function FindTextRegion (frame, wantedText)
+    if (not frame or not wantedText) then return nil; end
+
+    local regions = {frame:GetRegions()};
+    local i;
+    for i = 1, #regions do
+        local region = regions[i];
+        if (region and region.GetText and region:GetText() == wantedText) then
+            return region;
+        end
+    end
+    return nil;
+end
+
+local function FindTextureRegion (frame, textureNeedle)
+    if (not frame or not textureNeedle) then return nil; end
+
+    local regions = {frame:GetRegions()};
+    local i;
+    for i = 1, #regions do
+        local region = regions[i];
+        if (region and region.GetTexture) then
+            local texture = region:GetTexture();
+            if (type(texture) == "string" and string.find(texture, textureNeedle, 1, true)) then
+                return region;
+            end
+        end
+    end
+    return nil;
 end
 
 local function HideLegacyInventoryDecorations (frame)
@@ -131,6 +166,40 @@ local function ShowInventoryHeader (show)
     end
 end
 
+local function ApplyPostingInputRow (frame)
+    if (not frame or not postingPanel) then return; end
+
+    -- AuctionatorInventory.lua creates this whole row at y=-313/-319.  That was
+    -- correct for the upstream full-canvas layout, but in our segmented shell it
+    -- collides with queueStatus/buyoutTotal.  Re-anchor the existing objects as a
+    -- single lower row, leaving the posting engine and callbacks untouched.
+    local buyoutLabel = FindTextRegion (frame, "Buyout per item:");
+    local stackLabel = FindTextRegion (frame, "Stack:");
+    local auctionsLabel = FindTextRegion (frame, "Auctions:");
+    local goldIcon = FindTextureRegion (frame, "UI-GoldIcon");
+    local silverIcon = FindTextureRegion (frame, "UI-SilverIcon");
+    local copperIcon = FindTextureRegion (frame, "UI-CopperIcon");
+
+    MoveObject (buyoutLabel, postingPanel, "TOPLEFT", "TOPLEFT", 8, -56, 84, nil);
+    MoveObject (frame.priceGold, postingPanel, "TOPLEFT", "TOPLEFT", 98, -50, 38, 20);
+    MoveObject (goldIcon, postingPanel, "TOPLEFT", "TOPLEFT", 140, -54, 12, 12);
+    MoveObject (frame.priceSilver, postingPanel, "TOPLEFT", "TOPLEFT", 156, -50, 31, 20);
+    MoveObject (silverIcon, postingPanel, "TOPLEFT", "TOPLEFT", 191, -54, 12, 12);
+    MoveObject (frame.priceCopper, postingPanel, "TOPLEFT", "TOPLEFT", 207, -50, 31, 20);
+    MoveObject (copperIcon, postingPanel, "TOPLEFT", "TOPLEFT", 242, -54, 12, 12);
+    MoveButton (frame.recommendedButton, postingPanel, "TOPLEFT", "TOPLEFT", 258, -51, 64, 22);
+
+    MoveObject (stackLabel, postingPanel, "TOPLEFT", "TOPLEFT", 342, -56, 42, nil);
+    MoveObject (frame.stackSize, postingPanel, "TOPLEFT", "TOPLEFT", 388, -50, 36, 20);
+    MoveButton (frame.stackMaxButton, postingPanel, "TOPLEFT", "TOPLEFT", 430, -51, 42, 22);
+
+    MoveObject (auctionsLabel, postingPanel, "TOPLEFT", "TOPLEFT", 490, -56, 52, nil);
+    MoveObject (frame.numAuctions, postingPanel, "TOPLEFT", "TOPLEFT", 548, -50, 36, 20);
+    MoveButton (frame.auctionsMaxButton, postingPanel, "TOPLEFT", "TOPLEFT", 590, -51, 42, 22);
+
+    MoveButton (frame.durationButton, postingPanel, "TOPRIGHT", "TOPRIGHT", -8, -51, 120, 22);
+end
+
 local function ApplyLayout ()
     local frame = Atr_InventoryFrame;
     if (not frame or not built) then return; end
@@ -187,12 +256,11 @@ local function ApplyLayout ()
         frame.marketHint:SetHeight (18);
     end
 
-    -- One lower inset owns state, price/stack inputs and queue actions.  It is
-    -- deeper and wider now, but the proven Inventory engine input coordinates are
-    -- retained so this remains a presentation-only change.
+    -- Reserve the upper part of Posting Queue for status/summary, then put every
+    -- price/stack/auction control on one lower row below it.
     if (frame.queueStatus) then
         frame.queueStatus:ClearAllPoints();
-        frame.queueStatus:SetPoint ("TOPLEFT", postingPanel, "TOPLEFT", 8, -8);
+        frame.queueStatus:SetPoint ("TOPLEFT", postingPanel, "TOPLEFT", 8, -17);
         frame.queueStatus:SetWidth (390);
         frame.queueStatus:SetHeight (24);
         frame.queueStatus:SetJustifyV ("MIDDLE");
@@ -200,19 +268,19 @@ local function ApplyLayout ()
 
     if (frame.buyoutTotal) then
         frame.buyoutTotal:ClearAllPoints();
-        frame.buyoutTotal:SetPoint ("TOPLEFT", postingPanel, "TOPLEFT", 408, -7);
+        frame.buyoutTotal:SetPoint ("TOPLEFT", postingPanel, "TOPLEFT", 408, -16);
         frame.buyoutTotal:SetWidth (430);
         frame.buyoutTotal:SetHeight (13);
     end
 
     if (frame.planSummary) then
         frame.planSummary:ClearAllPoints();
-        frame.planSummary:SetPoint ("TOPLEFT", postingPanel, "TOPLEFT", 408, -21);
+        frame.planSummary:SetPoint ("TOPLEFT", postingPanel, "TOPLEFT", 408, -30);
         frame.planSummary:SetWidth (430);
         frame.planSummary:SetHeight (13);
     end
 
-    MoveButton (frame.durationButton, postingPanel, "TOPRIGHT", "TOPRIGHT", -8, -43, 120, 22);
+    ApplyPostingInputRow (frame);
 
     MoveButton (frame.startButton, postingPanel, "BOTTOMLEFT", "BOTTOMLEFT", 8, 7, 88, 22);
     if (frame.postButton) then
