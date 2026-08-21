@@ -1,4 +1,4 @@
--- CoAuctionator +Mod 1.9
+-- CoAuctionator +Mod 1.10
 -- Inventory-specific UI shell.
 --
 -- Inventory is intentionally NOT drawn on Atr_Main_Panel. CoAuctionatorClassicSkin
@@ -51,8 +51,7 @@ end
 local function HideLegacyInventoryDecorations (frame)
     -- AuctionatorInventory.lua predates this shell and creates an explanatory
     -- paragraph plus a 1px center divider. They are redundant once the tab has
-    -- explicit sections, and are the main source of the visual collisions seen
-    -- in +Mod 1.8.
+    -- explicit sections.
     local regions = {frame:GetRegions()};
     local i;
     for i = 1, #regions do
@@ -126,11 +125,14 @@ local function ApplyLayout ()
     local frame = Atr_InventoryFrame;
     if (not frame or not built) then return; end
 
-    -- Bids uses most of the AH's interior but leaves a comfortable stone border.
-    -- Scale the 744x374 Inventory workspace to ~670x337 and center it there.
-    frame:SetScale (0.90);
+    -- Fill nearly the same usable rectangle as Blizzard's Bids pane.  Instead of
+    -- scaling the old 744-wide workspace way down, widen the shell itself so the
+    -- right-side market pane and lower queue use the otherwise empty canvas.
+    frame:SetWidth (850);
+    frame:SetHeight (400);
+    frame:SetScale (0.91);
     frame:ClearAllPoints();
-    frame:SetPoint ("TOPLEFT", AuctionFrame, "TOPLEFT", 82, -67);
+    frame:SetPoint ("TOPLEFT", AuctionFrame, "TOPLEFT", 30, -60);
 
     HideLegacyInventoryDecorations (frame);
     ShowInventoryHeader (true);
@@ -139,22 +141,23 @@ local function ApplyLayout ()
     marketPanel:Show();
     postingPanel:Show();
 
-    -- Keep all three utility buttons inside the Inventory Items header instead of
-    -- letting them straddle both upper sections.
+    -- Keep all three utility buttons inside the Inventory Items header.
     MoveButton (frame.refreshButton,   inventoryPanel, "TOPLEFT", "TOPLEFT", 176, -4, 68, 22);
     MoveButton (frame.selectAllButton, inventoryPanel, "TOPLEFT", "TOPLEFT", 248, -4, 72, 22);
     MoveButton (frame.clearButton,     inventoryPanel, "TOPLEFT", "TOPLEFT", 324, -4, 58, 22);
 
     -- The Inventory engine updates marketTitle dynamically with the active item,
-    -- so reuse it as the right-pane caption instead of drawing a second title.
+    -- so reuse it as the right-pane caption.
     if (frame.marketTitle) then
         frame.marketTitle:ClearAllPoints();
         frame.marketTitle:SetPoint ("TOPLEFT", marketPanel, "TOPLEFT", 8, -6);
-        frame.marketTitle:SetWidth (324);
+        frame.marketTitle:SetWidth (434);
         frame.marketTitle:SetHeight (16);
         frame.marketTitle:Show();
     end
 
+    -- The taller upper panes give the eighth inventory/market row breathing room
+    -- before their summaries instead of letting the summary overlap the last row.
     if (frame.selectionSummary) then
         frame.selectionSummary:ClearAllPoints();
         frame.selectionSummary:SetPoint ("BOTTOMLEFT", inventoryPanel, "BOTTOMLEFT", 8, 7);
@@ -165,32 +168,32 @@ local function ApplyLayout ()
     if (frame.marketHint) then
         frame.marketHint:ClearAllPoints();
         frame.marketHint:SetPoint ("BOTTOMLEFT", marketPanel, "BOTTOMLEFT", 8, 7);
-        frame.marketHint:SetWidth (324);
+        frame.marketHint:SetWidth (434);
         frame.marketHint:SetHeight (18);
     end
 
-    -- One lower inset owns state, price/stack inputs and queue actions. The input
-    -- boxes themselves keep their proven AuctionatorInventory.lua coordinates;
-    -- only the status and action row are normalized around them.
+    -- One lower inset owns state, price/stack inputs and queue actions.  It is
+    -- deeper and wider now, but the proven Inventory engine input coordinates are
+    -- retained so this remains a presentation-only change.
     if (frame.queueStatus) then
         frame.queueStatus:ClearAllPoints();
-        frame.queueStatus:SetPoint ("TOPLEFT", postingPanel, "TOPLEFT", 8, -19);
-        frame.queueStatus:SetWidth (355);
+        frame.queueStatus:SetPoint ("TOPLEFT", postingPanel, "TOPLEFT", 8, -8);
+        frame.queueStatus:SetWidth (390);
         frame.queueStatus:SetHeight (24);
         frame.queueStatus:SetJustifyV ("MIDDLE");
     end
 
     if (frame.buyoutTotal) then
         frame.buyoutTotal:ClearAllPoints();
-        frame.buyoutTotal:SetPoint ("TOPLEFT", postingPanel, "TOPLEFT", 382, -18);
-        frame.buyoutTotal:SetWidth (348);
+        frame.buyoutTotal:SetPoint ("TOPLEFT", postingPanel, "TOPLEFT", 408, -7);
+        frame.buyoutTotal:SetWidth (430);
         frame.buyoutTotal:SetHeight (13);
     end
 
     if (frame.planSummary) then
         frame.planSummary:ClearAllPoints();
-        frame.planSummary:SetPoint ("TOPLEFT", postingPanel, "TOPLEFT", 382, -32);
-        frame.planSummary:SetWidth (348);
+        frame.planSummary:SetPoint ("TOPLEFT", postingPanel, "TOPLEFT", 408, -21);
+        frame.planSummary:SetWidth (430);
         frame.planSummary:SetHeight (13);
     end
 
@@ -222,11 +225,12 @@ local function BuildLayout ()
 
     local frame = Atr_InventoryFrame;
 
-    -- Existing rows occupy approximately x=0..390 and x=398..740. Keep those
-    -- proven dimensions and give each area a restrained Bids-like inset.
-    inventoryPanel = MakePanel (frame, "CoAtr_InventoryItemsPanel", 0, -18, 390, 240);
-    marketPanel    = MakePanel (frame, "CoAtr_InventoryMarketPanel", 398, -18, 342, 240);
-    postingPanel   = MakePanel (frame, "CoAtr_InventoryPostingPanel", 0, -268, 740, 104);
+    -- Left-side inventory rows retain their original width.  The market pane uses
+    -- the additional Bids-canvas width, while both upper panes are taller so the
+    -- summary/hint lines sit below the final visible row.
+    inventoryPanel = MakePanel (frame, "CoAtr_InventoryItemsPanel", 0, -18, 390, 260);
+    marketPanel    = MakePanel (frame, "CoAtr_InventoryMarketPanel", 398, -18, 452, 260);
+    postingPanel   = MakePanel (frame, "CoAtr_InventoryPostingPanel", 0, -284, 850, 110);
 
     MakeCaption (inventoryPanel, "Inventory Items");
     MakeCaption (postingPanel, "Posting Queue");
