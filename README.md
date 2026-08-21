@@ -82,8 +82,13 @@ Upgraded from a single scalar price per item to a rich per-item record, migrated
 
 Based on **Auctionator** by Zirco (and the Borjamacare v3.2.6 WoD branch). Scanning reliability patterns modeled on **TradeSkillMaster v2** by Sapu94 et al. Fork maintained for WotLK 3.3.5 private servers.
 
-## Madicinal fork addition: individual Buy Multiple picker
+## Madicinal fork additions
 
-This fork keeps the CoA Ascension buy engine intact and adds a separate **Buy Multiple** button for grouped auction results. The button expands the currently selected group into individual live AH rows so the user can choose exactly which auction to purchase. Each row still performs only one protected purchase per hardware click and routes through the upstream CoA engine for exact item/link/rarity validation, purchase acknowledgement, stale-row handling, retries, and scan updates.
+Changes below are additions made after the Sleepywalker69 CoA fork base:
+
+- **Independent `CoAuctionator` package identity** — the core addon and both companion data addons use the `CoAuctionator*` naming scheme so the Ascension launcher can manage its own `Auctionator` package without overwriting this fork.
+- **Individual Buy Multiple picker** — adds a separate **Buy Multiple** button for grouped auction results. It expands the selected group into individual live AH rows so the user can choose exactly which auction to purchase, while all protected purchasing, exact item/link/rarity validation, acknowledgement, stale-row handling, retries, and scan updates remain in the upstream CoA buy engine.
+- **Blizzard-style dialog behavior** — the Buy Multiple picker closes with Escape and automatically closes/clears its active buy state when the Auction House closes.
+- **Classic Auctionator UI shell** — restores the preserved pre-fork Auctionator frame artwork and legacy search-row geometry over the newer CoA functionality, including the original compact `+` Advanced Search button, while retaining CoA-only controls such as Exact Match, Chain Buy, and the newer scanning/inventory systems.
 
 Legacy pre-migration code is preserved in the `legacy-ascension-multidirect` branch.
