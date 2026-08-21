@@ -1,15 +1,16 @@
--- CoAuctionator +Mod 1.5
--- Classic/original Auctionator presentation layer.
+-- CoAuctionator +Mod 1.6
+-- Classic/original Auctionator presentation layer with strict tab isolation.
 --
--- The CoA fork keeps the same underlying Auctionator pane model, but changes
--- presentation and adds flat full-canvas panels.  This module restores the
--- pre-fork Auctionator shell/geometry while leaving all CoA scan, search,
--- inventory and purchase logic untouched.
+-- The CoA fork intentionally hides the six AuctionFrame art tiles and draws its
+-- own full-canvas panels on custom tabs.  For this fork we want the opposite:
+-- keep the original Auctionator artwork visible on CoAuctionator tabs, keep the
+-- CoA panels structurally present but visually transparent, and never touch the
+-- appearance of Blizzard's Browse / Bids / Auctions tabs.
 
 local textureBase = "Interface\\AddOns\\CoAuctionator\\Images\\";
-local classicBackdrop = nil;
 local classicAdvancedButton = nil;
 local elapsedSinceApply = 0;
+local lastWasCustom = nil;
 
 local function ClearPanelBackdrop (panel)
     if (not panel) then return; end
@@ -19,44 +20,57 @@ local function ClearPanelBackdrop (panel)
     end
 end
 
-local function EnsureClassicBackdrop ()
-    if (classicBackdrop or not AuctionFrame) then
-        return classicBackdrop;
+local function SelectedTabInfo ()
+    if (not AuctionFrame or not PanelTemplates_GetSelectedTab) then
+        return nil, nil, false;
     end
 
-    classicBackdrop = CreateFrame ("Frame", "CoAtr_ClassicBackdrop", AuctionFrame);
-    classicBackdrop:SetPoint ("TOPLEFT", AuctionFrame, "TOPLEFT", 8, -8);
-    classicBackdrop:SetPoint ("BOTTOMRIGHT", AuctionFrame, "BOTTOMRIGHT", -8, 8);
-    classicBackdrop:SetFrameLevel ((AuctionFrame:GetFrameLevel() or 0) + 1);
-    classicBackdrop:SetBackdrop ({
-        bgFile = "Interface\\CharacterFrame\\UI-Party-Background",
-        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-        tile = true,
-        tileSize = 32,
-        edgeSize = 12,
-        insets = {left = 3, right = 3, top = 3, bottom = 3}
-    });
-    classicBackdrop:Show();
+    local index = PanelTemplates_GetSelectedTab (AuctionFrame);
+    if (not index) then
+        return nil, nil, false;
+    end
 
-    return classicBackdrop;
+    local tab = _G["AuctionFrameTab"..index];
+    local isCustom = tab and tab.auctionatorTab ~= nil;
+
+    return index, tab, isCustom and true or false;
 end
 
-local function ApplyClassicAuctionArt ()
+local function HideLegacyBackdropIfPresent ()
+    -- +Mod 1.5 created this frame.  A /reload removes the old implementation,
+    -- but hide it defensively in case this module is hot-reloaded while testing.
+    local oldBackdrop = _G["CoAtr_ClassicBackdrop"];
+    if (oldBackdrop) then
+        oldBackdrop:Hide();
+    end
+end
+
+local function ShowClassicAuctionArt ()
     if (not AuctionFrame) then return; end
 
-    EnsureClassicBackdrop();
+    HideLegacyBackdropIfPresent();
 
-    -- These are the exact six artwork files used by the preserved pre-fork
-    -- Auctionator branch; only the addon-folder portion of the path changed.
-    if (AuctionFrameTopLeft)  then AuctionFrameTopLeft:SetTexture  (textureBase.."atr_topleft"); end
-    if (AuctionFrameTop)      then AuctionFrameTop:SetTexture      (textureBase.."atr_top"); end
-    if (AuctionFrameTopRight) then AuctionFrameTopRight:SetTexture (textureBase.."atr_topright"); end
-    if (AuctionFrameBotLeft)  then AuctionFrameBotLeft:SetTexture  (textureBase.."atr_botleft"); end
-    if (AuctionFrameBot)      then AuctionFrameBot:SetTexture      (textureBase.."atr_bot"); end
-    if (AuctionFrameBotRight) then AuctionFrameBotRight:SetTexture (textureBase.."atr_botright"); end
+    local art = {
+        {AuctionFrameTopLeft,  "atr_topleft"},
+        {AuctionFrameTop,      "atr_top"},
+        {AuctionFrameTopRight, "atr_topright"},
+        {AuctionFrameBotLeft,  "atr_botleft"},
+        {AuctionFrameBot,      "atr_bot"},
+        {AuctionFrameBotRight, "atr_botright"},
+    };
 
-    -- The CoA fork's full-canvas panels remain as structural frames, but their
-    -- black fallback backdrops are removed so the classic shell shows through.
+    local i;
+    for i = 1, #art do
+        local texture = art[i][1];
+        if (texture) then
+            texture:SetTexture (textureBase..art[i][2]);
+            texture:SetAlpha (1);
+            texture:Show();
+        end
+    end
+
+    -- The CoA panels still own useful tab structure, but they must not paint the
+    -- black full-canvas surface over the original Auctionator art.
     ClearPanelBackdrop (Atr_Panel_Sell);
     ClearPanelBackdrop (Atr_Panel_Buy);
     ClearPanelBackdrop (Atr_Panel_More);
@@ -95,9 +109,12 @@ local function EnsureClassicAdvancedButton ()
 end
 
 local function ApplyLegacyGeometry ()
-    if (not Atr_Search_Box or not Atr_Search_Button) then return; end
+    local _, _, isCustom = SelectedTabInfo();
+    if (not isCustom or not Atr_Search_Box or not Atr_Search_Button) then
+        return;
+    end
 
-    -- Search row from the preserved pre-fork Auctionator XML.
+    -- Search row copied from the preserved pre-fork Auctionator layout.
     Atr_Search_Box:ClearAllPoints();
     Atr_Search_Box:SetWidth (260);
     Atr_Search_Box:SetHeight (20);
@@ -114,16 +131,16 @@ local function ApplyLegacyGeometry ()
         adv:SetPoint ("LEFT", Atr_Search_Button, "RIGHT", 4, 0);
         adv:Show();
 
-        -- The CoA checkbox remains the source of enable/disable state, but the
-        -- old UI exposes Advanced as the original compact + button instead.
+        -- Keep the CoA checkbox as the underlying state source while presenting
+        -- the original compact + button to the user.
         if (Atr_Adv_Search_Button) then
             if (Atr_Adv_Search_Button:IsEnabled()) then adv:Enable(); else adv:Disable(); end
             Atr_Adv_Search_Button:Hide();
         end
     end
 
-    -- Exact Match is a CoA feature with no legacy equivalent. Keep it, but tuck
-    -- it beneath the old + button rather than letting it reshape the search row.
+    -- Exact Match is a CoA feature with no legacy equivalent. Keep it tucked
+    -- beneath the original advanced-search button.
     if (Atr_Exact_Search_Button and adv) then
         Atr_Exact_Search_Button:ClearAllPoints();
         Atr_Exact_Search_Button:SetPoint ("TOPLEFT", adv, "BOTTOMLEFT", 0, 2);
@@ -146,15 +163,42 @@ local function ApplyLegacyGeometry ()
     end
 end
 
--- The CoA fork calls this when showing one of its full-canvas structural panels.
--- Keep the panels transparent and let our legacy shell provide the surface.
-function Atr_ApplyPanelSkin (frame)
-    ClearPanelBackdrop (frame);
-    ApplyClassicAuctionArt();
+local function IsolateBlizzardTab ()
+    HideLegacyBackdropIfPresent();
+
+    -- These are all CoAuctionator-owned visual surfaces.  The upstream tab
+    -- handler already hides them; this is a defensive boundary so a future skin,
+    -- OnShow handler, or delayed update cannot project Buy/Sell UI onto Blizzard
+    -- Browse, Bids, or Auctions.
+    if (Atr_Main_Panel) then Atr_Main_Panel:Hide(); end
+    if (Atr_Panel_Sell) then Atr_Panel_Sell:Hide(); end
+    if (Atr_Panel_Buy) then Atr_Panel_Buy:Hide(); end
+    if (Atr_Panel_More) then Atr_Panel_More:Hide(); end
+    if (Atr_Panel_Inventory) then Atr_Panel_Inventory:Hide(); end
+    if (Atr_BagPanel) then Atr_BagPanel:Hide(); end
+    if (Atr_InventoryFrame) then Atr_InventoryFrame:Hide(); end
+    if (classicAdvancedButton) then classicAdvancedButton:Hide(); end
+
+    if (Atr_BuyMultiple_Frame and Atr_BuyMultiple_Frame:IsShown()) then
+        Atr_BuyMultiple_Frame:Hide();
+    end
 end
 
--- CoA also force-reanchors known controls after tab changes / skin conflicts.
--- Preserve that protection, then put the classic positions back on top of it.
+-- The CoA panel system calls Atr_HideAHArt before showing its custom panel.
+-- Suppress that behavior: original Auctionator uses these six art tiles as the
+-- custom-tab shell, so they must remain visible.  This affects only the custom
+-- panel path; Blizzard's own tab handler still controls its native artwork.
+function Atr_HideAHArt ()
+    -- intentionally empty for the classic-shell fork
+end
+
+-- Never allow the CoA full-canvas panels to paint their black fallback surface.
+function Atr_ApplyPanelSkin (frame)
+    ClearPanelBackdrop (frame);
+end
+
+-- CoA force-reanchors known controls after tab changes / skin conflicts. Preserve
+-- its functional fixups, then reapply the legacy positions only on custom tabs.
 if (Atr_FixupButtons) then
     local upstreamFixupButtons = Atr_FixupButtons;
     Atr_FixupButtons = function (...)
@@ -164,22 +208,53 @@ if (Atr_FixupButtons) then
     end;
 end
 
+local function ApplyForSelectedTab ()
+    local _, _, isCustom = SelectedTabInfo();
+
+    if (isCustom) then
+        ShowClassicAuctionArt();
+        ApplyLegacyGeometry();
+    else
+        IsolateBlizzardTab();
+        -- Do NOT set or re-show AuctionFrameTop*/Bot* textures here.  The native
+        -- Blizzard AuctionFrameTab_OnClick that already ran owns those textures.
+    end
+
+    lastWasCustom = isCustom;
+end
+
 local controller = CreateFrame ("Frame");
 controller:RegisterEvent ("AUCTION_HOUSE_SHOW");
-controller:SetScript ("OnEvent", function ()
-    ApplyClassicAuctionArt();
-    ApplyLegacyGeometry();
+controller:RegisterEvent ("AUCTION_HOUSE_CLOSED");
+controller:SetScript ("OnEvent", function (self, eventName)
+    if (eventName == "AUCTION_HOUSE_SHOW") then
+        ApplyForSelectedTab();
+    else
+        IsolateBlizzardTab();
+        lastWasCustom = nil;
+    end
 end);
 
--- The inherited tab switcher still writes old Auctionator image paths and its
--- geometry fixer may run after other UI skins. Reassert only while AH is open.
+-- Reassert tab ownership after other AH addons/skins finish their own delayed
+-- updates.  The important distinction from +Mod 1.5 is that custom art is never
+-- applied while a Blizzard tab is selected.
 controller:SetScript ("OnUpdate", function (self, elapsed)
     elapsedSinceApply = elapsedSinceApply + elapsed;
     if (elapsedSinceApply < 0.20) then return; end
     elapsedSinceApply = 0;
 
-    if (AuctionFrame and AuctionFrame:IsShown()) then
-        ApplyClassicAuctionArt();
-        ApplyLegacyGeometry();
+    if (not AuctionFrame or not AuctionFrame:IsShown()) then
+        return;
     end
+
+    local _, _, isCustom = SelectedTabInfo();
+
+    if (isCustom) then
+        ShowClassicAuctionArt();
+        ApplyLegacyGeometry();
+    else
+        IsolateBlizzardTab();
+    end
+
+    lastWasCustom = isCustom;
 end);
