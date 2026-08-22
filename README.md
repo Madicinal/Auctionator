@@ -1,6 +1,18 @@
 All credits to this original fork: https://github.com/Sleepywalker69/Auctionator-CoA-Ascension
 My changes are notated toward the very bottom, all made with GPT. I'm not a programmer and it's possible that it may have bugs. Works fine so far for me.
 
+# Installation
+This fork is intended to replace Ascension's bundled Auctionator, not install alongside it.
+
+In the Ascension Launcher, under the Addons section disable and remove the original Auctionator addon.
+Open your WoW Interface\AddOns folder and make sure the launcher's original Auctionator folder is no longer present. If it is, remove it.
+Download this repository and extract it.
+Copy the three folders beginning with **CoAuctionator** into your Interface\AddOns folder.
+Launch the game and make sure the three CoAuctionator addons are enabled at the character-select AddOns screen.
+
+If the Ascension Launcher restores its own Auctionator folder, make sure Auctionator is still disabled in the launcher. The three CoAuctionator folders are the only ones from this fork that you need.
+
+
 # CoAuctionator (3.3.5 fork) — Scanning & Selling Overhaul
 
 A heavily upgraded fork of **Auctionator v2.9.9** for WotLK 3.3.5 clients, backporting the auction database and selling UI from Auctionator v3.2.6 (WoD 6.2) and rebuilding the scanning engine around the reliability patterns used by **TradeSkillMaster v2.8**.
